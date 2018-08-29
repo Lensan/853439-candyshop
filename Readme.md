@@ -1,7 +1,7 @@
 # Личный проект «Кэндишоп» [![Build status][travis-image]][travis-url]
 
 * Студент: [Елена Лозицкая](https://up.htmlacademy.ru/javascript/15/user/853439).
-* Наставник: `Неизвестно`.
+* Наставник: `Евгений Колегов`.
 
 ---
 
