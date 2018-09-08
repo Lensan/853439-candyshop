@@ -1,10 +1,37 @@
 'use strict';
 
 var GOOD_NAMES = ['Чесночные сливки', 'Огуречный педант', 'Молочная хрюша', 'Грибной шейк', 'Баклажановое безумие', 'Паприколу итальяно', 'Нинзя-удар васаби', 'Хитрый баклажан', 'Горчичный вызов', 'Кедровая липучка', 'Корманный портвейн', 'Чилийский задира', 'Беконовый взрыв', 'Арахис vs виноград', 'Сельдерейная душа', 'Початок в бутылке', 'Чернющий мистер чеснок', 'Раша федераша', 'Кислая мина', 'Кукурузное утро', 'Икорный фуршет', 'Новогоднее настроение', 'С пивком потянет', 'Мисс креветка', 'Бесконечный взрыв', 'Невинные винные', 'Бельгийское пенное', 'Острый язычок'];
-
 var GOOD_PICTURES = ['gum-cedar', 'gum-chile', 'gum-eggplant', 'gum-mustard', 'gum-portwine', 'gum-wasabi', 'ice-cucumber', 'ice-eggplant', 'ice-garlic', 'ice-italian', 'ice-mushroom', 'ice-pig', 'marmalade-beer', 'marmalade-caviar', 'marmalade-corn', 'marmalade-new-year', 'marmalade-sour', 'marshmallow-bacon', 'marshmallow-beer', 'marshmallow-shrimp', 'marshmallow-spicy', 'marshmallow-wine', 'soda-bacon', 'soda-celery', 'soda-cob', 'soda-garlic', 'soda-peanut-grapes', 'soda-russian'];
-
 var GOOD_CONTENTS = ['молоко', 'сливки', 'вода', 'пищевой краситель', 'патока', 'ароматизатор бекона', 'ароматизатор свинца', 'ароматизатор дуба, идентичный натуральному', 'ароматизатор картофеля', 'лимонная кислота', 'загуститель', 'эмульгатор', 'консервант: сорбат калия', 'посолочная смесь: соль, нитрит натрия', 'ксилит', 'карбамид', 'вилларибо', 'виллабаджо'];
+
+var GOOD_IN_STOCK_AMOUNT = 5;
+var GOOD_LITTLE_AMOUNT = 1;
+var GOOD_NONE_AMOUNT = 0;
+
+var GOOD_MIN_AMOUNT = 0;
+var GOOD_MAX_AMOUNT = 20;
+
+var GOOD_MIN_PRICE = 100;
+var GOOD_MAX_PRICE = 1500;
+
+var GOOD_MIN_WEIGHT = 30;
+var GOOD_MAX_WEIGHT = 300;
+
+var GOOD_MIN_RATING_VALUE = 1;
+var GOOD_MAX_RATING_VALUE = 5;
+
+var GOOD_MIN_RATING_NUMBER = 10;
+var GOOD_MAX_RATING_NUMBER = 900;
+
+var GOOD_MIN_ENERGY = 70;
+var GOOD_MAX_ENERGY = 500;
+
+var GOODS_ORDERED_AMOUNT = 3;
+var GOOD_ORDER_MIN = 1;
+var GOOD_ORDER_MAX = 3;
+var PATH_TO_PIC = 'img/cards/';
+var NUMBER_OF_REPETITIONS = 30;
+var GOOD_CONTENT_MAX_AMOUNT = 8;
 
 var getRandomElement = function (array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -16,11 +43,10 @@ var getRandomNumber = function (min, max) {
 
 var getRandomIndexesArray = function (indexesAmount, arrayLength) {
   var indexesInUse = [];
-  var numberOfRepetitions = 30;
   for (var i = 0; i < indexesAmount; i++) {
     var indexRequired = true;
     var j = 0;
-    while (indexRequired && j < numberOfRepetitions) {
+    while (indexRequired && j < NUMBER_OF_REPETITIONS) {
       var index = getRandomNumber(0, arrayLength - 1);
       var k = 0;
       indexRequired = false;
@@ -38,7 +64,7 @@ var getRandomIndexesArray = function (indexesAmount, arrayLength) {
 };
 
 var generateGoodContent = function (contents) {
-  var contentAmount = getRandomNumber(1, 8);
+  var contentAmount = getRandomNumber(1, GOOD_CONTENT_MAX_AMOUNT);
   var content = '';
   var indexes = getRandomIndexesArray(contentAmount, contents.length);
   for (var i = 0; i < indexes.length; i++) {
@@ -56,28 +82,28 @@ var generateGoodsData = function (names, pictures, contents) {
     var good = {};
     good.name = getRandomElement(names);
     good.picture = getRandomElement(pictures);
-    good.amount = getRandomNumber(0, 20);
-    good.price = getRandomNumber(100, 1500);
-    good.weight = getRandomNumber(30, 300);
+    good.amount = getRandomNumber(GOOD_MIN_AMOUNT, GOOD_MAX_AMOUNT);
+    good.price = getRandomNumber(GOOD_MIN_PRICE, GOOD_MAX_PRICE);
+    good.weight = getRandomNumber(GOOD_MIN_WEIGHT, GOOD_MAX_WEIGHT);
     good.rating = {};
-    good.rating.value = getRandomNumber(1, 5);
-    good.rating.number = getRandomNumber(10, 900);
+    good.rating.value = getRandomNumber(GOOD_MIN_RATING_VALUE, GOOD_MAX_RATING_VALUE);
+    good.rating.number = getRandomNumber(GOOD_MIN_RATING_NUMBER, GOOD_MAX_RATING_NUMBER);
     good.nutritionFacts = {};
     good.nutritionFacts.sugar = !!getRandomNumber(0, 1);
-    good.nutritionFacts.energy = getRandomNumber(70, 500);
+    good.nutritionFacts.energy = getRandomNumber(GOOD_MIN_ENERGY, GOOD_MAX_ENERGY);
     good.nutritionFacts.contents = generateGoodContent(contents);
     goods.push(good);
   }
   return goods;
 };
 
-var renderCardClass = function (amount) {
+var renderCardClass = function (goodAmount) {
   var cardClass = '';
-  if (amount > 5) {
+  if (goodAmount > GOOD_IN_STOCK_AMOUNT) {
     cardClass = 'card--in-stock';
-  } else if (amount >= 1 && amount <= 5) {
+  } else if (goodAmount >= GOOD_LITTLE_AMOUNT && goodAmount <= GOOD_IN_STOCK_AMOUNT) {
     cardClass = 'card--little';
-  } else if (amount === 0) {
+  } else if (goodAmount === GOOD_NONE_AMOUNT) {
     cardClass = 'card--soon';
   }
   return cardClass;
@@ -89,87 +115,84 @@ var renderStarsRating = function (rating) {
 };
 
 var addReplaceClass = function (element, oldClass, newClass) {
-  var classList = element.classList;
+  var classListElement = element.classList;
   var isClassFound = false;
-  var length = classList.length;
+  var length = classListElement.length;
   for (var i = 0; i < length; i++) {
-    var item = classList.item(i);
+    var item = classListElement.item(i);
     if (item.includes(oldClass)) {
-      classList.replace(item, newClass);
+      classListElement.replace(item, newClass);
       isClassFound = true;
     }
   }
   if (!isClassFound) {
-    classList.add(newClass);
+    classListElement.add(newClass);
   }
 };
 
-var generatePicturePath = function (picture) {
-  return 'img/cards/' + picture + '.jpg';
+var generatePicturePath = function (picture, path) {
+  return path + picture + '.jpg';
 };
 
-var createCatalogCard = function (template, product) {
+var createCatalogCard = function (template, good) {
   var card = template.cloneNode(true);
-  card.classList.add(renderCardClass(product.amount));
-  card.querySelector('.card__title').textContent = product.name;
+  card.classList.add(renderCardClass(good.amount));
+  card.querySelector('.card__title').textContent = good.name;
   var cardImageElement = card.querySelector('.card__img');
-  cardImageElement.src = generatePicturePath(product.picture);
-  cardImageElement.alt = product.name;
-  card.querySelector('.card__price').innerHTML = product.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + product.weight + ' Г</span>';
-  addReplaceClass(card.querySelector('.stars__rating'), 'stars__rating--', renderStarsRating(product.rating.value));
-  card.querySelector('.star__count').textContent = '(' + product.rating.number + ')';
-  card.querySelector('.card__characteristic').textContent = (product.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + product.nutritionFacts.energy + ' ккал';
-  card.querySelector('.card__composition-list').textContent = product.nutritionFacts.contents + '.';
+  cardImageElement.src = generatePicturePath(good.picture, PATH_TO_PIC);
+  cardImageElement.alt = good.name;
+  card.querySelector('.card__price').innerHTML = good.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + good.weight + ' Г</span>';
+  addReplaceClass(card.querySelector('.stars__rating'), 'stars__rating--', renderStarsRating(good.rating.value));
+  card.querySelector('.star__count').textContent = '(' + good.rating.number + ')';
+  card.querySelector('.card__characteristic').textContent = (good.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + good.nutritionFacts.energy + ' ккал';
+  card.querySelector('.card__composition-list').textContent = good.nutritionFacts.contents + '.';
   return card;
 };
 
-var renderCatalogCardsTotal = function (names, pictures, contents) {
+var renderCatalogCardsTotal = function (goodNames, goodPictures, goodContents) {
   var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
-  var goods = generateGoodsData(names, pictures, contents);
+  var goodData = generateGoodsData(goodNames, goodPictures, goodContents);
   var fragment = document.createDocumentFragment();
-  for (var i = 0; i < goods.length; i++) {
-    var cardElement = createCatalogCard(catalogCardTemplate, goods[i]);
+  for (var i = 0; i < goodData.length; i++) {
+    var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
     fragment.appendChild(cardElement);
   }
   var catalogCardsElement = document.querySelector('.catalog__cards-wrap');
   catalogCardsElement.querySelector('.catalog__cards').classList.remove('catalog__cards--load');
   catalogCardsElement.querySelector('.catalog__load').classList.add('visually-hidden');
   catalogCardsElement.querySelector('.catalog__cards').appendChild(fragment);
-  return goods;
+  return goodData;
 };
 
 var goodsDataTotal = renderCatalogCardsTotal(GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS);
 
-var getGoodsForOrder = function (amount, goods) {
+var getGoodsForOrder = function (goodAmount, goods) {
   var goodsForOrder = [];
-  var i = getRandomNumber(1, 10);
-  while (goodsForOrder.length < 3 && i < goods.length) {
-    if (goods[i].amount !== 0) {
-      goodsForOrder.push(goods[i]);
-    }
-    i += 2;
+  var indexes = getRandomIndexesArray(goodAmount, goods.length);
+  for (var i = 0; i < indexes.length; i++) {
+    goodsForOrder.push(goods[indexes[i]]);
   }
   return goodsForOrder;
 };
 
-var createOrderCard = function (template, product) {
+var createOrderCard = function (template, good) {
   var card = template.cloneNode(true);
-  card.querySelector('.card-order__title').textContent = product.name;
+  card.querySelector('.card-order__title').textContent = good.name;
   var cardImageElement = card.querySelector('.card-order__img');
-  cardImageElement.src = generatePicturePath(product.picture);
-  cardImageElement.alt = product.name;
-  card.querySelector('.card-order__price').textContent = product.price + ' ₽';
+  cardImageElement.src = generatePicturePath(good.picture, PATH_TO_PIC);
+  cardImageElement.alt = good.name;
+  card.querySelector('.card-order__price').textContent = good.price + ' ₽';
   var cardCountElement = card.querySelector('.card-order__count');
-  cardCountElement.name = product.picture;
-  cardCountElement.value = getRandomNumber(1, 3);
-  cardCountElement.id = 'card-order__' + product.picture;
+  cardCountElement.name = good.picture;
+  cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN, GOOD_ORDER_MAX);
+  cardCountElement.id = 'card-order__' + good.picture;
   return card;
 };
 
-var renderOrderCardsTotal = function (goods) {
+var renderOrderCardsTotal = function (goodAmount, goods) {
   var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
   var fragment = document.createDocumentFragment();
-  var goodsOrdered = getGoodsForOrder(3, goods);
+  var goodsOrdered = getGoodsForOrder(goodAmount, goods);
   for (var i = 0; i < goodsOrdered.length; i++) {
     var cardElement = createOrderCard(cardOrderTemplate, goodsOrdered[i]);
     fragment.appendChild(cardElement);
@@ -180,4 +203,4 @@ var renderOrderCardsTotal = function (goods) {
   goodCardsElement.appendChild(fragment);
 };
 
-renderOrderCardsTotal(goodsDataTotal);
+renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
