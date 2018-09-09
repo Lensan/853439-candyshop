@@ -8,6 +8,10 @@ var GOOD_IN_STOCK_AMOUNT = 5;
 var GOOD_LITTLE_AMOUNT = 1;
 var GOOD_NONE_AMOUNT = 0;
 
+var CARD_IN_STOCK_CLASS = 'card--in-stock';
+var CARD_LITTLE_CLASS = 'card--little';
+var CARD_SOON_CLASS = 'card--soon';
+
 var GOOD_MIN_AMOUNT = 0;
 var GOOD_MAX_AMOUNT = 20;
 
@@ -26,9 +30,10 @@ var GOOD_MAX_RATING_NUMBER = 900;
 var GOOD_MIN_ENERGY = 70;
 var GOOD_MAX_ENERGY = 500;
 
+var GOODS_AMOUNT_TOTAL = 26;
 var GOODS_ORDERED_AMOUNT = 3;
-var GOOD_ORDER_MIN = 1;
-var GOOD_ORDER_MAX = 3;
+var GOOD_ORDER_MIN_AMOUNT = 1;
+var GOOD_ORDER_MAX_AMOUNT = 3;
 var PATH_TO_PIC = 'img/cards/';
 var NUMBER_OF_REPETITIONS = 30;
 var GOOD_CONTENT_MAX_AMOUNT = 8;
@@ -76,12 +81,12 @@ var generateGoodContent = function (contents) {
   return content;
 };
 
-var generateGoodsData = function (names, pictures, contents) {
+var generateGoodsData = function (amount, names, pictures, contents) {
   var goods = [];
-  for (var i = 0; i < names.length; i++) {
+  for (var i = 0; i < amount; i++) {
     var good = {};
     good.name = getRandomElement(names);
-    good.picture = getRandomElement(pictures);
+    good.picture = PATH_TO_PIC + getRandomElement(pictures) + '.jpg';
     good.amount = getRandomNumber(GOOD_MIN_AMOUNT, GOOD_MAX_AMOUNT);
     good.price = getRandomNumber(GOOD_MIN_PRICE, GOOD_MAX_PRICE);
     good.weight = getRandomNumber(GOOD_MIN_WEIGHT, GOOD_MAX_WEIGHT);
@@ -100,11 +105,11 @@ var generateGoodsData = function (names, pictures, contents) {
 var renderCardClass = function (goodAmount) {
   var cardClass = '';
   if (goodAmount > GOOD_IN_STOCK_AMOUNT) {
-    cardClass = 'card--in-stock';
+    cardClass = CARD_IN_STOCK_CLASS;
   } else if (goodAmount >= GOOD_LITTLE_AMOUNT && goodAmount <= GOOD_IN_STOCK_AMOUNT) {
-    cardClass = 'card--little';
+    cardClass = CARD_LITTLE_CLASS;
   } else if (goodAmount === GOOD_NONE_AMOUNT) {
-    cardClass = 'card--soon';
+    cardClass = CARD_SOON_CLASS;
   }
   return cardClass;
 };
@@ -117,8 +122,8 @@ var renderStarsRating = function (rating) {
 var addReplaceClass = function (element, oldClass, newClass) {
   var classListElement = element.classList;
   var isClassFound = false;
-  var length = classListElement.length;
-  for (var i = 0; i < length; i++) {
+  var classListLength = classListElement.length;
+  for (var i = 0; i < classListLength; i++) {
     var item = classListElement.item(i);
     if (item.includes(oldClass)) {
       classListElement.replace(item, newClass);
@@ -130,16 +135,12 @@ var addReplaceClass = function (element, oldClass, newClass) {
   }
 };
 
-var generatePicturePath = function (picture, path) {
-  return path + picture + '.jpg';
-};
-
 var createCatalogCard = function (template, good) {
   var card = template.cloneNode(true);
   card.classList.add(renderCardClass(good.amount));
   card.querySelector('.card__title').textContent = good.name;
   var cardImageElement = card.querySelector('.card__img');
-  cardImageElement.src = generatePicturePath(good.picture, PATH_TO_PIC);
+  cardImageElement.src = good.picture;
   cardImageElement.alt = good.name;
   card.querySelector('.card__price').innerHTML = good.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + good.weight + ' Г</span>';
   addReplaceClass(card.querySelector('.stars__rating'), 'stars__rating--', renderStarsRating(good.rating.value));
@@ -149,9 +150,9 @@ var createCatalogCard = function (template, good) {
   return card;
 };
 
-var renderCatalogCardsTotal = function (goodNames, goodPictures, goodContents) {
+var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents) {
   var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
-  var goodData = generateGoodsData(goodNames, goodPictures, goodContents);
+  var goodData = generateGoodsData(goodAmount, goodNames, goodPictures, goodContents);
   var fragment = document.createDocumentFragment();
   for (var i = 0; i < goodData.length; i++) {
     var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
@@ -164,7 +165,7 @@ var renderCatalogCardsTotal = function (goodNames, goodPictures, goodContents) {
   return goodData;
 };
 
-var goodsDataTotal = renderCatalogCardsTotal(GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS);
+var goodsDataTotal = renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS);
 
 var getGoodsForOrder = function (goodAmount, goods) {
   var goodsForOrder = [];
@@ -175,17 +176,28 @@ var getGoodsForOrder = function (goodAmount, goods) {
   return goodsForOrder;
 };
 
+var getGoodId = function (path) {
+  var id = '';
+  var regexp = new RegExp('(?<=\\/.+\\/)(.+)(?=\\.)');
+  var ids = path.match(regexp);
+  if (ids) {
+    id = ids[0];
+  }
+  return id;
+};
+
 var createOrderCard = function (template, good) {
   var card = template.cloneNode(true);
   card.querySelector('.card-order__title').textContent = good.name;
   var cardImageElement = card.querySelector('.card-order__img');
-  cardImageElement.src = generatePicturePath(good.picture, PATH_TO_PIC);
+  cardImageElement.src = good.picture;
   cardImageElement.alt = good.name;
   card.querySelector('.card-order__price').textContent = good.price + ' ₽';
   var cardCountElement = card.querySelector('.card-order__count');
-  cardCountElement.name = good.picture;
-  cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN, GOOD_ORDER_MAX);
-  cardCountElement.id = 'card-order__' + good.picture;
+  var goodId = getGoodId(good.picture);
+  cardCountElement.name = goodId;
+  cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN_AMOUNT, GOOD_ORDER_MAX_AMOUNT);
+  cardCountElement.id = 'card-order__' + goodId;
   return card;
 };
 
