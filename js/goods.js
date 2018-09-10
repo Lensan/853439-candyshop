@@ -35,12 +35,8 @@ var GOODS_ORDERED_AMOUNT = 3;
 var GOOD_ORDER_MIN_AMOUNT = 1;
 var GOOD_ORDER_MAX_AMOUNT = 3;
 var PATH_TO_PIC = 'img/cards/';
-var NUMBER_OF_REPETITIONS = 30;
+var NUMBER_OF_REPETITIONS = 100;
 var GOOD_CONTENT_MAX_AMOUNT = 8;
-
-var getRandomElement = function (array) {
-  return array[Math.floor(Math.random() * array.length)];
-};
 
 var getRandomNumber = function (min, max) {
   return Math.floor(Math.random() * (max + 1 - min) + min);
@@ -83,10 +79,12 @@ var generateGoodContent = function (contents) {
 
 var generateGoodsData = function (amount, names, pictures, contents) {
   var goods = [];
+  amount = Math.min(amount, names.length, pictures.length);
+  var indexes = getRandomIndexesArray(amount, Math.min(names.length, pictures.length));
   for (var i = 0; i < amount; i++) {
     var good = {};
-    good.name = getRandomElement(names);
-    good.picture = PATH_TO_PIC + getRandomElement(pictures) + '.jpg';
+    good.name = names[indexes[i]];
+    good.picture = PATH_TO_PIC + pictures[indexes[i]] + '.jpg';
     good.amount = getRandomNumber(GOOD_MIN_AMOUNT, GOOD_MAX_AMOUNT);
     good.price = getRandomNumber(GOOD_MIN_PRICE, GOOD_MAX_PRICE);
     good.weight = getRandomNumber(GOOD_MIN_WEIGHT, GOOD_MAX_WEIGHT);
@@ -102,7 +100,7 @@ var generateGoodsData = function (amount, names, pictures, contents) {
   return goods;
 };
 
-var renderCardClass = function (goodAmount) {
+var getCardClass = function (goodAmount) {
   var cardClass = '';
   if (goodAmount > GOOD_IN_STOCK_AMOUNT) {
     cardClass = CARD_IN_STOCK_CLASS;
@@ -114,36 +112,39 @@ var renderCardClass = function (goodAmount) {
   return cardClass;
 };
 
-var renderStarsRating = function (rating) {
+var getStarsRating = function (rating) {
   var starsRatings = ['one', 'two', 'three', 'four', 'five'];
   return 'stars__rating--' + starsRatings[rating - 1];
 };
 
-var addReplaceClass = function (element, oldClass, newClass) {
-  var classListElement = element.classList;
+var addRemoveClass = function (classList, className, oldClass, newClass) {
+  var classListInitial = className.split(' ');
   var isClassFound = false;
-  var classListLength = classListElement.length;
-  for (var i = 0; i < classListLength; i++) {
-    var item = classListElement.item(i);
+  for (var i = 0; i < classListInitial.length; i++) {
+    var item = classListInitial[i];
     if (item.includes(oldClass)) {
-      classListElement.replace(item, newClass);
-      isClassFound = true;
+      if (!isClassFound && item === newClass) {
+        isClassFound = true;
+      } else {
+        classList.remove(item);
+      }
     }
   }
   if (!isClassFound) {
-    classListElement.add(newClass);
+    classList.add(newClass);
   }
 };
 
 var createCatalogCard = function (template, good) {
   var card = template.cloneNode(true);
-  card.classList.add(renderCardClass(good.amount));
+  addRemoveClass(card.classList, card.className, 'card--', getCardClass(good.amount));
   card.querySelector('.card__title').textContent = good.name;
   var cardImageElement = card.querySelector('.card__img');
   cardImageElement.src = good.picture;
   cardImageElement.alt = good.name;
   card.querySelector('.card__price').innerHTML = good.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + good.weight + ' Г</span>';
-  addReplaceClass(card.querySelector('.stars__rating'), 'stars__rating--', renderStarsRating(good.rating.value));
+  var starsRatingElement = card.querySelector('.stars__rating');
+  addRemoveClass(starsRatingElement.classList, starsRatingElement.className, 'stars__rating--', getStarsRating(good.rating.value));
   card.querySelector('.star__count').textContent = '(' + good.rating.number + ')';
   card.querySelector('.card__characteristic').textContent = (good.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + good.nutritionFacts.energy + ' ккал';
   card.querySelector('.card__composition-list').textContent = good.nutritionFacts.contents + '.';
