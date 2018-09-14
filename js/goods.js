@@ -31,12 +31,13 @@ var GOOD_MIN_ENERGY = 70;
 var GOOD_MAX_ENERGY = 500;
 
 var GOODS_AMOUNT_TOTAL = 26;
-var GOODS_ORDERED_AMOUNT = 3;
 var GOOD_ORDER_MIN_AMOUNT = 1;
 var GOOD_ORDER_MAX_AMOUNT = 3;
 var PATH_TO_PIC = 'img/cards/';
 var NUMBER_OF_REPETITIONS = 100;
 var GOOD_CONTENT_MAX_AMOUNT = 8;
+
+var ENTER_KEY = 'Enter';
 
 var getRandomNumber = function (min, max) {
   return Math.floor(Math.random() * (max + 1 - min) + min);
@@ -151,7 +152,7 @@ var createCatalogCard = function (template, good) {
   return card;
 };
 
-var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents) {
+var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents, cardsElement) {
   var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
   var goodData = generateGoodsData(goodAmount, goodNames, goodPictures, goodContents);
   var fragment = document.createDocumentFragment();
@@ -159,61 +160,152 @@ var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goo
     var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
     fragment.appendChild(cardElement);
   }
-  var catalogCardsElement = document.querySelector('.catalog__cards-wrap');
-  catalogCardsElement.querySelector('.catalog__cards').classList.remove('catalog__cards--load');
-  catalogCardsElement.querySelector('.catalog__load').classList.add('visually-hidden');
-  catalogCardsElement.querySelector('.catalog__cards').appendChild(fragment);
+  cardsElement.appendChild(fragment);
   return goodData;
 };
 
-var goodsDataTotal = renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS);
+var catalogCardsWrapElement = document.querySelector('.catalog__cards-wrap');
+var catalogCardsElement = catalogCardsWrapElement.querySelector('.catalog__cards');
 
-var getGoodsForOrder = function (goodAmount, goods) {
-  var goodsForOrder = [];
-  var indexes = getRandomIndexesArray(goodAmount, goods.length);
-  for (var i = 0; i < indexes.length; i++) {
-    goodsForOrder.push(goods[indexes[i]]);
+document.addEventListener('DOMContentLoaded', function () {
+  catalogCardsElement.classList.remove('catalog__cards--load');
+  catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
+  renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
+  addFavoriteButtonListener();
+  addBuyButtonListener();
+});
+
+var addFavoriteButtonListener = function () {
+  var favoriteButtons = document.querySelectorAll('.card__btn-favorite');
+  for (var i = 0; i < favoriteButtons.length; i++) {
+    favoriteButtons[i].addEventListener('click', onFavoriteButtonClick);
+    favoriteButtons[i].addEventListener('keydown', onFavoriteButtonPress);
   }
-  return goodsForOrder;
 };
 
-var getGoodId = function (path) {
-  var id = '';
-  var regexp = new RegExp('(?<=\\/.+\\/)(.+)(?=\\.)');
-  var ids = path.match(regexp);
-  if (ids) {
-    id = ids[0];
-  }
-  return id;
+var removeFocus = function (evt) {
+  evt.target.blur();
 };
 
-var createOrderCard = function (template, good) {
+var onFavoriteButtonClick = function (evt) {
+  evt.preventDefault();
+  evt.target.classList.toggle('card__btn-favorite--selected');
+  evt.target.onmouseup = removeFocus;
+};
+
+var onFavoriteButtonPress = function (evt) {
+  if (evt.key === ENTER_KEY) {
+    evt.preventDefault();
+    evt.target.classList.toggle('card__btn-favorite--selected');
+  }
+};
+
+var addBuyButtonListener = function () {
+  var buyButtons = document.querySelectorAll('.card__btn');
+  for (var i = 0; i < buyButtons.length; i++) {
+    buyButtons[i].addEventListener('click', onBuyButtonClick);
+    buyButtons[i].addEventListener('keydown', onBuyButtonPress);
+  }
+};
+
+var getParentElement = function (evt, className) {
+  var element = evt.target;
+  var i = 0;
+  while (!element.classList.contains(className) && i < NUMBER_OF_REPETITIONS) {
+    element = element.parentNode;
+    i++;
+  }
+  return element;
+};
+
+var getRegexpValue = function (path, expression) {
+  var value = '';
+  var regexp = new RegExp(expression);
+  var result = path.match(regexp);
+  if (result) {
+    value = result[0];
+  }
+  return value;
+};
+
+var getCardDataForOrder = function (evt) {
+  var cardElement = getParentElement(evt, 'catalog__card');
+  var cardData = {};
+  if (!cardElement.classList.contains(CARD_SOON_CLASS)) {
+    cardData.name = cardElement.querySelector('.card__title').textContent;
+    cardData.picture = cardElement.querySelector('.card__img').src;
+    cardData.price = getRegexpValue(cardElement.querySelector('.card__price').textContent, '.+(?=\\/)');
+  } else {
+    cardData = '';
+  }
+  return cardData;
+};
+
+var createAndRenderOrderCard = function (evt) {
+  var goodOrderedData = getCardDataForOrder(evt);
+  if (goodOrderedData !== '') {
+    renderOrderCard(goodOrderedData);
+    addCloseOrderButtonListener();
+  }
+};
+
+var onBuyButtonClick = function (evt) {
+  evt.preventDefault();
+  createAndRenderOrderCard(evt);
+};
+
+var onBuyButtonPress = function (evt) {
+  if (evt.key === ENTER_KEY) {
+    evt.preventDefault();
+    createAndRenderOrderCard(evt);
+  }
+};
+
+var addCloseOrderButtonListener = function () {
+  var lastAddedOrderCloseButton = document.querySelector('.card-order:last-child .card-order__close');
+  lastAddedOrderCloseButton.addEventListener('click', onOrderCloseButtonClick);
+//  lastAddedOrderCloseButton.addEventListener('keydown', onOrderCloseButtonPress);
+};
+
+var onOrderCloseButtonClick = function (evt) {
+  evt.preventDefault();
+  var cardOrderElement = getParentElement(evt, 'card-order');
+  cardOrderElement.parentNode.removeChild(cardOrderElement);
+  changeGoodCardsElement(document.querySelector('.goods__cards'));
+};
+
+var createOrderCard = function (template, order) {
   var card = template.cloneNode(true);
-  card.querySelector('.card-order__title').textContent = good.name;
+  card.querySelector('.card-order__title').textContent = order.name;
   var cardImageElement = card.querySelector('.card-order__img');
-  cardImageElement.src = good.picture;
-  cardImageElement.alt = good.name;
-  card.querySelector('.card-order__price').textContent = good.price + ' ₽';
+  cardImageElement.src = order.picture;
+  cardImageElement.alt = order.name;
+  card.querySelector('.card-order__price').textContent = order.price;
   var cardCountElement = card.querySelector('.card-order__count');
-  var goodId = getGoodId(good.picture);
+  var goodId = getRegexpValue(order.picture, '.+(?=\\.)');
+  goodId = getRegexpValue(goodId, '(?<=\\/)\\w+.\\w+$');
   cardCountElement.name = goodId;
   cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN_AMOUNT, GOOD_ORDER_MAX_AMOUNT);
   cardCountElement.id = 'card-order__' + goodId;
   return card;
 };
 
-var renderOrderCardsTotal = function (goodAmount, goods) {
-  var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
-  var fragment = document.createDocumentFragment();
-  var goodsOrdered = getGoodsForOrder(goodAmount, goods);
-  for (var i = 0; i < goodsOrdered.length; i++) {
-    var cardElement = createOrderCard(cardOrderTemplate, goodsOrdered[i]);
-    fragment.appendChild(cardElement);
-  }
-  var goodCardsElement = document.querySelector('.goods__cards');
-  goodCardsElement.classList.remove('goods__cards--empty');
-  goodCardsElement.querySelector('.goods__card-empty').classList.add('visually-hidden');
-  goodCardsElement.appendChild(fragment);
+var checkGoodCardsEmpty = function (element) {
+  return (!element.querySelector('.card-order'));
 };
 
-renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
+var changeGoodCardsElement = function (element) {
+  if (checkGoodCardsEmpty(element)) {
+    element.classList.toggle('goods__cards--empty');
+    element.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
+  }
+};
+
+var renderOrderCard = function (goodOrdered) {
+  var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
+  var cardElement = createOrderCard(cardOrderTemplate, goodOrdered);
+
+  var goodCardsElement = document.querySelector('.goods__cards');
+  changeGoodCardsElement(goodCardsElement);
+  goodCardsElement.appendChild(cardElement);
+};
