@@ -31,8 +31,6 @@ var GOOD_MIN_ENERGY = 70;
 var GOOD_MAX_ENERGY = 500;
 
 var GOODS_AMOUNT_TOTAL = 26;
-var GOOD_ORDER_MIN_AMOUNT = 1;
-var GOOD_ORDER_MAX_AMOUNT = 3;
 var PATH_TO_PIC = 'img/cards/';
 var NUMBER_OF_REPETITIONS = 100;
 var GOOD_CONTENT_MAX_AMOUNT = 8;
@@ -63,6 +61,26 @@ var getRandomIndexesArray = function (indexesAmount, arrayLength) {
     indexesInUse.push(index);
   }
   return indexesInUse;
+};
+
+var getParentElement = function (evt, className) {
+  var element = evt.target;
+  var i = 0;
+  while (!element.classList.contains(className) && i < NUMBER_OF_REPETITIONS) {
+    element = element.parentNode;
+    i++;
+  }
+  return element;
+};
+
+var getRegexpValue = function (path, expression) {
+  var value = '';
+  var regexp = new RegExp(expression);
+  var result = path.match(regexp);
+  if (result) {
+    value = result[0];
+  }
+  return value;
 };
 
 var generateGoodContent = function (contents) {
@@ -171,15 +189,18 @@ document.addEventListener('DOMContentLoaded', function () {
   catalogCardsElement.classList.remove('catalog__cards--load');
   catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
   renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
-  addFavoriteButtonListener();
-  addBuyButtonListener();
+
+  var favoriteButtons = document.querySelectorAll('.card__btn-favorite');
+  addButtonsListener(favoriteButtons, onFavoriteButtonClickOrPress);
+
+  var buyButtons = document.querySelectorAll('.card__btn');
+  addButtonsListener(buyButtons, onBuyButtonClickOrPress);
 });
 
-var addFavoriteButtonListener = function () {
-  var favoriteButtons = document.querySelectorAll('.card__btn-favorite');
-  for (var i = 0; i < favoriteButtons.length; i++) {
-    favoriteButtons[i].addEventListener('click', onFavoriteButtonClick);
-    favoriteButtons[i].addEventListener('keydown', onFavoriteButtonPress);
+var addButtonsListener = function (buttons, action) {
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', action);
+    buttons[i].addEventListener('keydown', action);
   }
 };
 
@@ -187,45 +208,21 @@ var removeFocus = function (evt) {
   evt.target.blur();
 };
 
-var onFavoriteButtonClick = function (evt) {
-  evt.preventDefault();
-  evt.target.classList.toggle('card__btn-favorite--selected');
-  evt.target.onmouseup = removeFocus;
-};
-
-var onFavoriteButtonPress = function (evt) {
-  if (evt.key === ENTER_KEY) {
+var onFavoriteButtonClickOrPress = function (evt) {
+  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
     evt.preventDefault();
     evt.target.classList.toggle('card__btn-favorite--selected');
+    if (evt.type !== 'keydown') {
+      evt.target.onmouseup = removeFocus;
+    }
   }
 };
 
-var addBuyButtonListener = function () {
-  var buyButtons = document.querySelectorAll('.card__btn');
-  for (var i = 0; i < buyButtons.length; i++) {
-    buyButtons[i].addEventListener('click', onBuyButtonClick);
-    buyButtons[i].addEventListener('keydown', onBuyButtonPress);
+var onBuyButtonClickOrPress = function (evt) {
+  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    evt.preventDefault();
+    createAndRenderOrderCard(evt);
   }
-};
-
-var getParentElement = function (evt, className) {
-  var element = evt.target;
-  var i = 0;
-  while (!element.classList.contains(className) && i < NUMBER_OF_REPETITIONS) {
-    element = element.parentNode;
-    i++;
-  }
-  return element;
-};
-
-var getRegexpValue = function (path, expression) {
-  var value = '';
-  var regexp = new RegExp(expression);
-  var result = path.match(regexp);
-  if (result) {
-    value = result[0];
-  }
-  return value;
 };
 
 var getCardDataForOrder = function (evt) {
@@ -241,37 +238,80 @@ var getCardDataForOrder = function (evt) {
   return cardData;
 };
 
+var addSingleButtonListener = function (button, action, mouseEvent, keyboardEvent) {
+  button.addEventListener(mouseEvent, action);
+  button.addEventListener(keyboardEvent, action);
+};
+
+var checkGoodIsOrdered = function (goodData) {
+  var isGoodOrdered = false;
+  var goodsOrderedTotal = document.querySelectorAll('.card-order');
+  for (var i = 0; i < goodsOrderedTotal.length; i++) {
+    var goodTitle = goodsOrderedTotal[i].querySelector('.card-order__title').textContent;
+    if (goodTitle === goodData.name) {
+      goodsOrderedTotal[i].querySelector('.card-order__count').value++;
+      isGoodOrdered = true;
+    }
+  }
+  return isGoodOrdered;
+};
+
 var createAndRenderOrderCard = function (evt) {
   var goodOrderedData = getCardDataForOrder(evt);
+
   if (goodOrderedData !== '') {
-    renderOrderCard(goodOrderedData);
-    addCloseOrderButtonListener();
+    var isGoodInList = checkGoodIsOrdered(goodOrderedData);
+    if (!isGoodInList) {
+      var orderCardElement = renderOrderCard(goodOrderedData);
+
+      var orderCloseButton = orderCardElement.querySelector('.card-order__close');
+      addSingleButtonListener(orderCloseButton, onOrderCloseButtonClickOrPress, 'click', 'keydown');
+
+      var orderDecreaseButton = orderCardElement.querySelector('.card-order__btn--decrease');
+      addSingleButtonListener(orderDecreaseButton, onOrderCountButtonsClickOrPress, 'click', 'keydown');
+
+      var orderIncreaseButton = orderCardElement.querySelector('.card-order__btn--increase');
+      addSingleButtonListener(orderIncreaseButton, onOrderCountButtonsClickOrPress, 'click', 'keydown');
+
+      var orderCountButton = orderCardElement.querySelector('.card-order__count');
+      addSingleButtonListener(orderCountButton, onOrderCountButtonsClickOrPress, 'click', 'keyup');
+    }
   }
 };
 
-var onBuyButtonClick = function (evt) {
-  evt.preventDefault();
-  createAndRenderOrderCard(evt);
-};
-
-var onBuyButtonPress = function (evt) {
-  if (evt.key === ENTER_KEY) {
-    evt.preventDefault();
-    createAndRenderOrderCard(evt);
-  }
-};
-
-var addCloseOrderButtonListener = function () {
-  var lastAddedOrderCloseButton = document.querySelector('.card-order:last-child .card-order__close');
-  lastAddedOrderCloseButton.addEventListener('click', onOrderCloseButtonClick);
-//  lastAddedOrderCloseButton.addEventListener('keydown', onOrderCloseButtonPress);
-};
-
-var onOrderCloseButtonClick = function (evt) {
-  evt.preventDefault();
+var removeGoodFromOrder = function (evt) {
   var cardOrderElement = getParentElement(evt, 'card-order');
   cardOrderElement.parentNode.removeChild(cardOrderElement);
   changeGoodCardsElement(document.querySelector('.goods__cards'));
+};
+
+var increaseDecreaseCheckOrderAmount = function (evt) {
+  var cardOrderAmountElement = getParentElement(evt, 'card-order__amount');
+  var cardOrderCountElement = cardOrderAmountElement.querySelector('.card-order__count');
+  if (evt.target.classList.contains('card-order__btn--increase')) {
+    cardOrderCountElement.value++;
+  } else {
+    if (evt.target.classList.contains('card-order__btn--decrease')) {
+      cardOrderCountElement.value--;
+    }
+    if (parseInt(cardOrderCountElement.value, 10) <= 0 || !parseInt(cardOrderCountElement.value, 10)) {
+      removeGoodFromOrder(evt);
+    }
+  }
+};
+
+var onOrderCloseButtonClickOrPress = function (evt) {
+  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    evt.preventDefault();
+    removeGoodFromOrder(evt);
+  }
+};
+
+var onOrderCountButtonsClickOrPress = function (evt) {
+  if (evt.type === 'click' || evt.type === 'keyup' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    evt.preventDefault();
+    increaseDecreaseCheckOrderAmount(evt);
+  }
 };
 
 var createOrderCard = function (template, order) {
@@ -285,7 +325,7 @@ var createOrderCard = function (template, order) {
   var goodId = getRegexpValue(order.picture, '.+(?=\\.)');
   goodId = getRegexpValue(goodId, '(?<=\\/)\\w+.\\w+$');
   cardCountElement.name = goodId;
-  cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN_AMOUNT, GOOD_ORDER_MAX_AMOUNT);
+  cardCountElement.value = 1;
   cardCountElement.id = 'card-order__' + goodId;
   return card;
 };
@@ -308,4 +348,5 @@ var renderOrderCard = function (goodOrdered) {
   var goodCardsElement = document.querySelector('.goods__cards');
   changeGoodCardsElement(goodCardsElement);
   goodCardsElement.appendChild(cardElement);
+  return cardElement;
 };
