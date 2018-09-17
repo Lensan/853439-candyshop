@@ -350,3 +350,37 @@ var renderOrderCard = function (goodOrdered) {
   goodCardsElement.appendChild(cardElement);
   return cardElement;
 };
+
+var onUserInputFieldsInput = function (evt) {
+  var targetElement = evt.target;
+  if (targetElement.validity.valueMissing) {
+    targetElement.setCustomValidity('Поле не должно быть пустым!');
+    targetElement.parentNode.classList.add('text-input--error');
+  } else if (targetElement.validity.patternMismatch) {
+    if (targetElement.id === 'payment__card-number') {
+      targetElement.setCustomValidity('Введите номер банковской карты в правильном формате: 16 цифр');
+    } else if (targetElement.id === 'payment__card-date') {
+      targetElement.setCustomValidity('Введите срок действия карты в правильном формате: мм/гг');
+    } else {
+      targetElement.setCustomValidity('Неправильный формат данных!');
+    }
+    targetElement.parentNode.classList.add('text-input--error');
+  } else if (targetElement.validity.typeMismatch) {
+    targetElement.setCustomValidity('Введите почтовый адрес в правильном формате');
+    targetElement.parentNode.classList.add('text-input--error');
+  } else {
+    targetElement.setCustomValidity('');
+    targetElement.parentNode.classList.remove('text-input--error');
+  }
+};
+
+var onUserInputFieldsStartInput = function (evt) {
+  var targetElement = evt.target;
+  targetElement.setCustomValidity('');
+  targetElement.parentNode.classList.remove('text-input--error');
+};
+
+var buyElement = document.querySelector('.buy');
+buyElement.addEventListener('input', onUserInputFieldsStartInput);
+buyElement.addEventListener('change', onUserInputFieldsInput);
+buyElement.addEventListener('invalid', onUserInputFieldsInput, true);
