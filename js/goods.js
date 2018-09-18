@@ -73,14 +73,14 @@ var getParentElement = function (evt, className) {
   return element;
 };
 
-var getRegexpValue = function (path, expression) {
-  var value = '';
+var getRegexpValue = function (value, expression) {
+  var regexpValue = '';
   var regexp = new RegExp(expression);
-  var result = path.match(regexp);
+  var result = value.match(regexp);
   if (result) {
-    value = result[0];
+    regexpValue = result[0];
   }
-  return value;
+  return regexpValue;
 };
 
 var generateGoodContent = function (contents) {
@@ -189,18 +189,17 @@ document.addEventListener('DOMContentLoaded', function () {
   catalogCardsElement.classList.remove('catalog__cards--load');
   catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
   renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
-
-  var favoriteButtons = document.querySelectorAll('.card__btn-favorite');
-  addButtonsListener(favoriteButtons, onFavoriteButtonClickOrPress);
-
-  var buyButtons = document.querySelectorAll('.card__btn');
-  addButtonsListener(buyButtons, onBuyButtonClickOrPress);
+  catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
 });
 
-var addButtonsListener = function (buttons, action) {
-  for (var i = 0; i < buttons.length; i++) {
-    buttons[i].addEventListener('click', action);
-    buttons[i].addEventListener('keydown', action);
+var addRemoveCardComposition = function (element) {
+  element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
+};
+
+var addRemoveCardFavorite = function (evt) {
+  evt.target.classList.toggle('card__btn-favorite--selected');
+  if (evt.type !== 'keydown') {
+    evt.target.onmouseup = removeFocus;
   }
 };
 
@@ -208,18 +207,15 @@ var removeFocus = function (evt) {
   evt.target.blur();
 };
 
-var onFavoriteButtonClickOrPress = function (evt) {
-  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+var onCatalogCardElementClick = function (evt) {
+  var targetElement = evt.target;
+  var cardElement = getParentElement(evt, 'catalog__card');
+  if (targetElement.classList.contains('card__btn-composition')) {
+    addRemoveCardComposition(cardElement);
+  } else if (targetElement.classList.contains('card__btn-favorite')) {
     evt.preventDefault();
-    evt.target.classList.toggle('card__btn-favorite--selected');
-    if (evt.type !== 'keydown') {
-      evt.target.onmouseup = removeFocus;
-    }
-  }
-};
-
-var onBuyButtonClickOrPress = function (evt) {
-  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    addRemoveCardFavorite(evt);
+  } else if (targetElement.classList.contains('card__btn')) {
     evt.preventDefault();
     createAndRenderOrderCard(evt);
   }
@@ -256,6 +252,15 @@ var checkGoodIsOrdered = function (goodData) {
   return isGoodOrdered;
 };
 
+var changeMainBasketHeader = function (goodsData) {
+  var mainBasketHeaderElement = document.querySelector('.main-header__basket');
+  if (goodsData.goodsCountTotal > 0) {
+    mainBasketHeaderElement.textContent = 'В корзине ' + goodsData.goodsCountTotal + ' товаров на сумму ' + goodsData.goodsCostTotal + ' ₽';
+  } else {
+    mainBasketHeaderElement.textContent = 'В корзине ничего нет';
+  }
+};
+
 var createAndRenderOrderCard = function (evt) {
   var goodOrderedData = getCardDataForOrder(evt);
 
@@ -276,6 +281,8 @@ var createAndRenderOrderCard = function (evt) {
       var orderCountButton = orderCardElement.querySelector('.card-order__count');
       addSingleButtonListener(orderCountButton, onOrderCountButtonsClickOrPress, 'click', 'keyup');
     }
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
   }
 };
 
@@ -304,6 +311,8 @@ var onOrderCloseButtonClickOrPress = function (evt) {
   if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
     evt.preventDefault();
     removeGoodFromOrder(evt);
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
   }
 };
 
@@ -311,6 +320,8 @@ var onOrderCountButtonsClickOrPress = function (evt) {
   if (evt.type === 'click' || evt.type === 'keyup' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
     evt.preventDefault();
     increaseDecreaseCheckOrderAmount(evt);
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
   }
 };
 
@@ -330,12 +341,25 @@ var createOrderCard = function (template, order) {
   return card;
 };
 
-var checkGoodCardsEmpty = function (element) {
-  return (!element.querySelector('.card-order'));
+var checkOrderCardsData = function (element) {
+  var goodsOrderedData = {};
+  goodsOrderedData.goodsCountTotal = 0;
+  goodsOrderedData.goodsCostTotal = 0;
+  if (element.querySelector('.card-order')) {
+    var orderCountElements = element.querySelectorAll('.card-order__count');
+    var orderPriceElements = element.querySelectorAll('.card-order__price');
+    for (var i = 0; i < orderCountElements.length; i++) {
+      var count = parseInt(orderCountElements[i].value, 10);
+      goodsOrderedData.goodsCountTotal += count;
+      var price = parseInt(getRegexpValue(orderPriceElements[i].textContent, '\\d+'), 10);
+      goodsOrderedData.goodsCostTotal += count * price;
+    }
+  }
+  return goodsOrderedData;
 };
 
 var changeGoodCardsElement = function (element) {
-  if (checkGoodCardsEmpty(element)) {
+  if (checkOrderCardsData(element).goodsCountTotal === 0) {
     element.classList.toggle('goods__cards--empty');
     element.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
   }
@@ -351,7 +375,25 @@ var renderOrderCard = function (goodOrdered) {
   return cardElement;
 };
 
+// FORM VALIDATION AND MANIPULATION FILE
+var changeOrderTabs = function (mainTabsClass, tabClass1, tabClass2) {
+  var mainTabsElement = document.querySelector(mainTabsClass);
+  mainTabsElement.querySelector(tabClass1).classList.toggle('visually-hidden');
+  mainTabsElement.querySelector(tabClass2).classList.toggle('visually-hidden');
+};
+
 var onUserInputFieldsInput = function (evt) {
+  checkInputValidity(evt);
+  if (evt.target.classList.contains('toggle-btn__input')) {
+    if (evt.target.name === 'pay-method') {
+      changeOrderTabs('.payment', '.payment__card-wrap', '.payment__cash-wrap');
+    } else if (evt.target.name === 'method-deliver') {
+      changeOrderTabs('.deliver', '.deliver__store', '.deliver__courier');
+    }
+  }
+};
+
+var checkInputValidity = function (evt) {
   var targetElement = evt.target;
   if (targetElement.validity.valueMissing) {
     targetElement.setCustomValidity('Поле не должно быть пустым!');
