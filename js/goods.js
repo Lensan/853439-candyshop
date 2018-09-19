@@ -42,6 +42,16 @@ var getRandomNumber = function (min, max) {
   return Math.floor(Math.random() * (max + 1 - min) + min);
 };
 
+var getRegexpValue = function (value, expression) {
+  var regexpValue = '';
+  var regexp = new RegExp(expression);
+  var result = value.match(regexp);
+  if (result) {
+    regexpValue = result[0];
+  }
+  return regexpValue;
+};
+
 var getRandomIndexesArray = function (indexesAmount, arrayLength) {
   var indexesInUse = [];
   for (var i = 0; i < indexesAmount; i++) {
@@ -217,3 +227,119 @@ var renderOrderCardsTotal = function (goodAmount, goods) {
 };
 
 renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
+
+// FORM VALIDATION AND MANIPULATION FILE
+var switchOrderTabs = function (evt, mainTabsClass, tabClass1, tabClass2) {
+  var mainTabsElement = document.querySelector(mainTabsClass);
+  var regexpTabClass1 = getRegexpValue(tabClass1, '(?<=\\.)\\w+');
+  var tabClassToShow = (evt.target.id === regexpTabClass1) ? tabClass1 : tabClass2;
+  var tabClassToHide = (evt.target.id === regexpTabClass1) ? tabClass2 : tabClass1;
+
+  var elementToShow = mainTabsElement.querySelector(tabClassToShow);
+  elementToShow.classList.remove('visually-hidden');
+  var elementToHide = mainTabsElement.querySelector(tabClassToHide);
+  elementToHide.classList.add('visually-hidden');
+
+  var inputsToEnable = elementToShow.querySelectorAll('input');
+  for (var i = 0; i < inputsToEnable.length; i++) {
+    inputsToEnable[i].disabled = false;
+  }
+
+  var inputsToDisable = elementToHide.querySelectorAll('input');
+  for (var j = 0; j < inputsToDisable.length; j++) {
+    inputsToDisable[j].disabled = true;
+  }
+};
+
+var checkInputElementsTotal = function (evt) {
+  var inputElements = evt.currentTarget.querySelectorAll('input[class="text-input__input"]');
+  for (var i = 0; i < inputElements.length; i++) {
+    checkElementValidity(inputElements[i]);
+  }
+};
+
+var onUserTabOrSubmitClick = function (evt) {
+  if (evt.target.classList.contains('toggle-btn__input')) {
+    if (evt.target.name === 'pay-method') {
+      switchOrderTabs(evt, '.payment', '.payment__card-wrap', '.payment__cash-wrap');
+    } else if (evt.target.name === 'method-deliver') {
+      switchOrderTabs(evt, '.deliver', '.deliver__store', '.deliver__courier');
+    }
+  }
+  if (evt.target.classList.contains('buy__submit-btn')) {
+    checkInputElementsTotal(evt);
+  }
+};
+
+var checkCardWithLune = function (cardNumber) {
+  var isValid = true;
+  var sum = 0;
+  var cardNumbers = cardNumber.split('');
+  for (var i = 0; i < cardNumbers.length; i++) {
+    cardNumbers[i] = parseInt(cardNumbers[i], 10);
+    if ((i + 1) % 2 !== 0) {
+      cardNumbers[i] *= 2;
+    }
+    if (cardNumbers[i] >= 10) {
+      cardNumbers[i] -= 9;
+    }
+    sum += cardNumbers[i];
+  }
+  if (sum % 10 !== 0) {
+    isValid = false;
+  }
+  return isValid;
+};
+
+var checkElementValidity = function (element) {
+  var isCardNumberValid = true;
+  if (element.id === 'payment__card-number') {
+    isCardNumberValid = checkCardWithLune(element.value);
+  }
+  if (element.validity.valueMissing) {
+    element.setCustomValidity('Поле не должно быть пустым!');
+    element.parentNode.classList.add('text-input--error');
+  } else if (element.validity.patternMismatch) {
+    if (element.id === 'payment__card-number') {
+      element.setCustomValidity('Введите номер банковской карты в правильном формате: 16 цифр');
+    } else if (element.id === 'payment__card-date') {
+      element.setCustomValidity('Введите срок действия карты в правильном формате: мм/гг');
+    } else {
+      element.setCustomValidity('Неправильный формат данных!');
+    }
+    element.parentNode.classList.add('text-input--error');
+  } else if (element.validity.typeMismatch) {
+    element.setCustomValidity('Введите почтовый адрес в правильном формате');
+    element.parentNode.classList.add('text-input--error');
+  } else if (!isCardNumberValid) {
+    element.setCustomValidity('Невалидный номер банковской карты!');
+    element.parentNode.classList.add('text-input--error');
+  } else {
+    element.setCustomValidity('');
+    element.parentNode.classList.remove('text-input--error');
+  }
+  return element.validity.valid;
+};
+
+var onUserInputFieldsInput = function (evt) {
+  var targetElement = evt.target;
+  if (targetElement.type !== 'radio') {
+    if (!targetElement.validity.valid) {
+      document.querySelector('#buy-form').reportValidity();
+    }
+    checkElementValidity(targetElement);
+  }
+};
+
+var onUserInputFieldsStartInput = function (evt) {
+  var targetElement = evt.target;
+  if (targetElement.type !== 'radio') {
+    targetElement.setCustomValidity('');
+    targetElement.parentNode.classList.remove('text-input--error');
+  }
+};
+
+var buyElement = document.querySelector('#buy-form');
+buyElement.addEventListener('input', onUserInputFieldsStartInput);
+buyElement.addEventListener('blur', onUserInputFieldsInput, true);
+buyElement.addEventListener('click', onUserTabOrSubmitClick);
