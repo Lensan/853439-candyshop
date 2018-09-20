@@ -42,16 +42,6 @@ var getRandomNumber = function (min, max) {
   return Math.floor(Math.random() * (max + 1 - min) + min);
 };
 
-var getRegexpValue = function (value, expression) {
-  var regexpValue = '';
-  var regexp = new RegExp(expression);
-  var result = value.match(regexp);
-  if (result) {
-    regexpValue = result[0];
-  }
-  return regexpValue;
-};
-
 var getRandomIndexesArray = function (indexesAmount, arrayLength) {
   var indexesInUse = [];
   for (var i = 0; i < indexesAmount; i++) {
@@ -229,45 +219,13 @@ var renderOrderCardsTotal = function (goodAmount, goods) {
 renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
 
 // FORM VALIDATION AND MANIPULATION FILE
-var switchOrderTabs = function (evt, mainTabsClass, tabClass1, tabClass2) {
-  var mainTabsElement = document.querySelector(mainTabsClass);
-  var regexpTabClass1 = getRegexpValue(tabClass1, '(?<=\\.)\\w+');
-  var tabClassToShow = (evt.target.id === regexpTabClass1) ? tabClass1 : tabClass2;
-  var tabClassToHide = (evt.target.id === regexpTabClass1) ? tabClass2 : tabClass1;
-
-  var elementToShow = mainTabsElement.querySelector(tabClassToShow);
-  elementToShow.classList.remove('visually-hidden');
-  var elementToHide = mainTabsElement.querySelector(tabClassToHide);
-  elementToHide.classList.add('visually-hidden');
-
-  var inputsToEnable = elementToShow.querySelectorAll('input');
-  for (var i = 0; i < inputsToEnable.length; i++) {
-    inputsToEnable[i].disabled = false;
-  }
-
-  var inputsToDisable = elementToHide.querySelectorAll('input');
-  for (var j = 0; j < inputsToDisable.length; j++) {
-    inputsToDisable[j].disabled = true;
-  }
-};
-
-var checkInputElementsTotal = function (evt) {
-  var inputElements = evt.currentTarget.querySelectorAll('input[class="text-input__input"]');
+var checkInputElementsTotal = function () {
+  var inputElements = buyElement.querySelectorAll('input[class="text-input__input"]');
   for (var i = 0; i < inputElements.length; i++) {
-    checkElementValidity(inputElements[i]);
-  }
-};
-
-var onUserTabOrSubmitClick = function (evt) {
-  if (evt.target.classList.contains('toggle-btn__input')) {
-    if (evt.target.name === 'pay-method') {
-      switchOrderTabs(evt, '.payment', '.payment__card-wrap', '.payment__cash-wrap');
-    } else if (evt.target.name === 'method-deliver') {
-      switchOrderTabs(evt, '.deliver', '.deliver__store', '.deliver__courier');
+    var isElementValid = checkElementValidity(inputElements[i]);
+    if (inputElements[i].id === 'payment__card-number' && isElementValid) {
+      checkBankCardValidity(inputElements[i]);
     }
-  }
-  if (evt.target.classList.contains('buy__submit-btn')) {
-    checkInputElementsTotal(evt);
   }
 };
 
@@ -291,14 +249,18 @@ var checkCardWithLune = function (cardNumber) {
   return isValid;
 };
 
+var addErrorClass = function (element) {
+  element.parentNode.classList.add('text-input--error');
+};
+
+var removeErrorClass = function (element) {
+  element.parentNode.classList.remove('text-input--error');
+};
+
 var checkElementValidity = function (element) {
-  var isCardNumberValid = true;
-  if (element.id === 'payment__card-number') {
-    isCardNumberValid = checkCardWithLune(element.value);
-  }
   if (element.validity.valueMissing) {
     element.setCustomValidity('Поле не должно быть пустым!');
-    element.parentNode.classList.add('text-input--error');
+    addErrorClass(element);
   } else if (element.validity.patternMismatch) {
     if (element.id === 'payment__card-number') {
       element.setCustomValidity('Введите номер банковской карты в правильном формате: 16 цифр');
@@ -307,39 +269,109 @@ var checkElementValidity = function (element) {
     } else {
       element.setCustomValidity('Неправильный формат данных!');
     }
-    element.parentNode.classList.add('text-input--error');
+    addErrorClass(element);
   } else if (element.validity.typeMismatch) {
     element.setCustomValidity('Введите почтовый адрес в правильном формате');
-    element.parentNode.classList.add('text-input--error');
-  } else if (!isCardNumberValid) {
-    element.setCustomValidity('Невалидный номер банковской карты!');
-    element.parentNode.classList.add('text-input--error');
+    addErrorClass(element);
   } else {
     element.setCustomValidity('');
-    element.parentNode.classList.remove('text-input--error');
+    removeErrorClass(element);
   }
   return element.validity.valid;
 };
 
-var onUserInputFieldsInput = function (evt) {
-  var targetElement = evt.target;
-  if (targetElement.type !== 'radio') {
-    if (!targetElement.validity.valid) {
-      document.querySelector('#buy-form').reportValidity();
-    }
-    checkElementValidity(targetElement);
+var checkBankCardValidity = function (element) {
+  var isCardNumberValid = checkCardWithLune(element.value);
+  if (!isCardNumberValid) {
+    element.setCustomValidity('Невалидный номер банковской карты!');
+    addErrorClass(element);
+  } else {
+    element.setCustomValidity('');
   }
+};
+
+var onContactDataInputFieldsInput = function (evt) {
+  var targetElement = evt.target;
+  if (!targetElement.validity.valid) {
+    document.querySelector('#buy-form').reportValidity();
+  }
+  checkElementValidity(targetElement);
+};
+
+var onBankCardInputFieldsInput = function (evt) {
+  var targetElement = evt.target;
+  if (!targetElement.validity.valid) {
+    document.querySelector('#buy-form').reportValidity();
+  }
+  var isElementValid = checkElementValidity(targetElement);
+  if (targetElement.id === 'payment__card-number' && isElementValid) {
+    checkBankCardValidity(targetElement);
+  }
+};
+
+var onDeliveryInputFieldsInput = function (evt) {
+  var targetElement = evt.target;
+  if (!targetElement.validity.valid) {
+    document.querySelector('#buy-form').reportValidity();
+  }
+  checkElementValidity(targetElement);
 };
 
 var onUserInputFieldsStartInput = function (evt) {
   var targetElement = evt.target;
-  if (targetElement.type !== 'radio') {
-    targetElement.setCustomValidity('');
-    targetElement.parentNode.classList.remove('text-input--error');
+  targetElement.setCustomValidity('');
+  removeErrorClass(targetElement);
+};
+
+var onSubmitButtonClick = function (evt) {
+  checkInputElementsTotal(evt);
+};
+
+var switchTabs = function (evt, element, class1, class2, id1, method) {
+  element.querySelector(class1).classList.add('visually-hidden');
+  element.querySelector(class2).classList.add('visually-hidden');
+  var classToRemove = (evt.target.id === id1) ? class1 : class2;
+  element.querySelector(classToRemove).classList.remove('visually-hidden');
+
+  var elementInputs = element.querySelectorAll('input');
+  for (var i = 0; i < elementInputs.length; i++) {
+    if (elementInputs[i].name !== method) {
+      elementInputs[i].disabled = true;
+    }
   }
+  var inputsToEnable = element.querySelector(classToRemove).querySelectorAll('input');
+  for (var j = 0; j < inputsToEnable.length; j++) {
+    inputsToEnable[j].disabled = false;
+  }
+};
+
+var onPaymentTabClick = function (evt) {
+  switchTabs(evt, paymentElement, '.payment__card-wrap', '.payment__cash-wrap', 'payment__card', 'pay-method');
+};
+
+var onDeliveryTabClick = function (evt) {
+  switchTabs(evt, deliveryElement, '.deliver__store', '.deliver__courier', 'deliver__store', 'method-deliver');
 };
 
 var buyElement = document.querySelector('#buy-form');
 buyElement.addEventListener('input', onUserInputFieldsStartInput);
-buyElement.addEventListener('blur', onUserInputFieldsInput, true);
-buyElement.addEventListener('click', onUserTabOrSubmitClick);
+
+var contactDataInputsElement = buyElement.querySelector('.contact-data__inputs');
+contactDataInputsElement.addEventListener('blur', onContactDataInputFieldsInput, true);
+
+var paymentInputsElement = buyElement.querySelector('.payment__inputs');
+paymentInputsElement.addEventListener('blur', onBankCardInputFieldsInput, true);
+
+var deliveryElement = buyElement.querySelector('.deliver');
+var deliveryCourierElement = deliveryElement.querySelector('.deliver__courier');
+deliveryCourierElement.addEventListener('blur', onDeliveryInputFieldsInput, true);
+
+var submitButtonElement = buyElement.querySelector('.buy__submit-btn');
+submitButtonElement.addEventListener('click', onSubmitButtonClick);
+
+var paymentElement = buyElement.querySelector('.payment');
+var paymentMethodElement = paymentElement.querySelector('.payment__method');
+paymentMethodElement.addEventListener('click', onPaymentTabClick);
+
+var deliveryToggleElement = deliveryElement.querySelector('.deliver__toggle');
+deliveryToggleElement.addEventListener('click', onDeliveryTabClick);
