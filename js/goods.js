@@ -228,7 +228,6 @@ var getGoodFromInitialData = function (name) {
       goodData = Object.assign(goodData, window.goodsDataTotal[i]);
     }
   }
-  console.log(goodData.amount);
   return goodData;
 };
 
