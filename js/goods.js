@@ -65,10 +65,12 @@ var getRandomIndexesArray = function (indexesAmount, arrayLength) {
 
 var getParentElement = function (evt, className) {
   var element = evt.target;
-  var i = 0;
-  while (!element.classList.contains(className) && i < NUMBER_OF_REPETITIONS) {
+  var isElementFound = false;
+  while (!isElementFound && element.parentNode.nodeName !== '#document') {
     element = element.parentNode;
-    i++;
+    if (element.classList.contains(className)) {
+      isElementFound = true;
+    }
   }
   return element;
 };
@@ -81,6 +83,10 @@ var getRegexpValue = function (value, expression) {
     regexpValue = result[0];
   }
   return regexpValue;
+};
+
+var checkObjectIsEmpty = function (obj) {
+  return Object.keys(obj).length === 0;
 };
 
 var generateGoodContent = function (contents) {
@@ -188,7 +194,7 @@ var catalogCardsElement = catalogCardsWrapElement.querySelector('.catalog__cards
 document.addEventListener('DOMContentLoaded', function () {
   catalogCardsElement.classList.remove('catalog__cards--load');
   catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
-  renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
+  window.goodsDataTotal = renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
   catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
 });
 
@@ -198,12 +204,6 @@ var addRemoveCardComposition = function (element) {
 
 var addRemoveCardFavorite = function (evt) {
   evt.target.classList.toggle('card__btn-favorite--selected');
-  if (evt.type !== 'keydown') {
-    evt.target.onmouseup = removeFocus;
-  }
-};
-
-var removeFocus = function (evt) {
   evt.target.blur();
 };
 
@@ -221,15 +221,22 @@ var onCatalogCardElementClick = function (evt) {
   }
 };
 
+var getGoodFromInitialData = function (name) {
+  var goodData = {};
+  for (var i = 0; i < window.goodsDataTotal.length; i++) {
+    if (name === window.goodsDataTotal[i].name) {
+      goodData = Object.assign(goodData, window.goodsDataTotal[i]);
+    }
+  }
+  console.log(goodData.amount);
+  return goodData;
+};
+
 var getCardDataForOrder = function (evt) {
   var cardElement = getParentElement(evt, 'catalog__card');
   var cardData = {};
   if (!cardElement.classList.contains(CARD_SOON_CLASS)) {
-    cardData.name = cardElement.querySelector('.card__title').textContent;
-    cardData.picture = cardElement.querySelector('.card__img').src;
-    cardData.price = getRegexpValue(cardElement.querySelector('.card__price').textContent, '.+(?=\\/)');
-  } else {
-    cardData = '';
+    cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent);
   }
   return cardData;
 };
@@ -239,17 +246,17 @@ var addSingleButtonListener = function (button, action, mouseEvent, keyboardEven
   button.addEventListener(keyboardEvent, action);
 };
 
-var checkGoodIsOrdered = function (goodData) {
-  var isGoodOrdered = false;
+var increaseGoodOrderedCount = function (goodData) {
   var goodsOrderedTotal = document.querySelectorAll('.card-order');
   for (var i = 0; i < goodsOrderedTotal.length; i++) {
     var goodTitle = goodsOrderedTotal[i].querySelector('.card-order__title').textContent;
     if (goodTitle === goodData.name) {
-      goodsOrderedTotal[i].querySelector('.card-order__count').value++;
-      isGoodOrdered = true;
+      var goodOrderedElement = goodsOrderedTotal[i].querySelector('.card-order__count');
+      if ((parseInt(goodOrderedElement.value, 10) + 1) <= goodData.amount) {
+        goodOrderedElement.value = parseInt(goodOrderedElement.value, 10) + 1;
+      }
     }
   }
-  return isGoodOrdered;
 };
 
 var changeMainBasketHeader = function (goodsData) {
@@ -261,12 +268,26 @@ var changeMainBasketHeader = function (goodsData) {
   }
 };
 
+window.goodsOrderedTotal = [];
+var checkAddGoodInOrderArray = function (goodData) {
+  var isGoodInOrder = false;
+  var goodsOrdered = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrdered.length; i++) {
+    if (goodsOrdered[i].name === goodData.name) {
+      isGoodInOrder = true;
+    }
+  }
+  if (!isGoodInOrder) {
+    goodsOrdered.push(goodData);
+  }
+  return isGoodInOrder;
+};
+
 var createAndRenderOrderCard = function (evt) {
   var goodOrderedData = getCardDataForOrder(evt);
-
-  if (goodOrderedData !== '') {
-    var isGoodInList = checkGoodIsOrdered(goodOrderedData);
-    if (!isGoodInList) {
+  if (!checkObjectIsEmpty(goodOrderedData)) {
+    var isGoodOrdered = checkAddGoodInOrderArray(goodOrderedData);
+    if (!isGoodOrdered) {
       var orderCardElement = renderOrderCard(goodOrderedData);
 
       var orderCloseButton = orderCardElement.querySelector('.card-order__close');
@@ -280,9 +301,20 @@ var createAndRenderOrderCard = function (evt) {
 
       var orderCountButton = orderCardElement.querySelector('.card-order__count');
       addSingleButtonListener(orderCountButton, onOrderCountButtonsClickOrPress, 'click', 'keyup');
+    } else {
+      increaseGoodOrderedCount(goodOrderedData);
     }
     var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
     changeMainBasketHeader(goodsOrderedData);
+  }
+};
+
+var removeGoodFromTotalArray = function (goodName) {
+  var goodsOrdered = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrdered.length; i++) {
+    if (goodsOrdered[i].name === goodName) {
+      goodsOrdered.splice(i, 1);
+    }
   }
 };
 
@@ -290,19 +322,43 @@ var removeGoodFromOrder = function (evt) {
   var cardOrderElement = getParentElement(evt, 'card-order');
   cardOrderElement.parentNode.removeChild(cardOrderElement);
   changeGoodCardsElement(document.querySelector('.goods__cards'));
+  removeGoodFromTotalArray(cardOrderElement.querySelector('.card-order__title').textContent);
 };
 
-var increaseDecreaseCheckOrderAmount = function (evt) {
-  var cardOrderAmountElement = getParentElement(evt, 'card-order__amount');
-  var cardOrderCountElement = cardOrderAmountElement.querySelector('.card-order__count');
-  if (evt.target.classList.contains('card-order__btn--increase')) {
-    cardOrderCountElement.value++;
+var checkOrderCountForIncrease = function (countElement, goodOrderedName) {
+  var isOrderCountToBeIncreased = false;
+  var goodsOrderedData = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrderedData.length; i++) {
+    if (goodsOrderedData[i].name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= goodsOrderedData[i].amount) {
+      isOrderCountToBeIncreased = true;
+    }
+  }
+  return isOrderCountToBeIncreased;
+};
+
+var reduceOrderCountIfIncreased = function (countElement, goodOrderedName) {
+  var goodsOrderedData = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrderedData.length; i++) {
+    if (goodsOrderedData[i].name === goodOrderedName && parseInt(countElement.value, 10) > goodsOrderedData[i].amount) {
+      countElement.value = goodsOrderedData[i].amount;
+    }
+  }
+};
+
+var increaseDecreaseCheckOrderCount = function (evt) {
+  var goodsCardElement = getParentElement(evt, 'goods_card');
+  var cardOrderTitle = goodsCardElement.querySelector('.card-order__title').textContent;
+  var cardOrderCountElement = goodsCardElement.querySelector('.card-order__count');
+  if (evt.target.classList.contains('card-order__btn--increase') && checkOrderCountForIncrease(cardOrderCountElement, cardOrderTitle)) {
+    cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) + 1;
   } else {
     if (evt.target.classList.contains('card-order__btn--decrease')) {
-      cardOrderCountElement.value--;
+      cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) - 1;
     }
     if (parseInt(cardOrderCountElement.value, 10) <= 0 || !parseInt(cardOrderCountElement.value, 10)) {
       removeGoodFromOrder(evt);
+    } else {
+      reduceOrderCountIfIncreased(cardOrderCountElement, cardOrderTitle);
     }
   }
 };
@@ -319,7 +375,7 @@ var onOrderCloseButtonClickOrPress = function (evt) {
 var onOrderCountButtonsClickOrPress = function (evt) {
   if (evt.type === 'click' || evt.type === 'keyup' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
     evt.preventDefault();
-    increaseDecreaseCheckOrderAmount(evt);
+    increaseDecreaseCheckOrderCount(evt);
     var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
     changeMainBasketHeader(goodsOrderedData);
   }
