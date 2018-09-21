@@ -319,38 +319,42 @@ var onDeliveryInputFieldsInput = function (evt) {
 
 var onUserInputFieldsStartInput = function (evt) {
   var targetElement = evt.target;
-  targetElement.setCustomValidity('');
-  removeErrorClass(targetElement);
+  if (targetElement.type !== 'radio') {
+    targetElement.setCustomValidity('');
+    removeErrorClass(targetElement);
+  }
 };
 
 var onSubmitButtonClick = function (evt) {
   checkInputElementsTotal(evt);
 };
 
-var switchTabs = function (evt, element, class1, class2, id1, method) {
-  element.querySelector(class1).classList.add('visually-hidden');
-  element.querySelector(class2).classList.add('visually-hidden');
-  var classToRemove = (evt.target.id === id1) ? class1 : class2;
-  element.querySelector(classToRemove).classList.remove('visually-hidden');
-
-  var elementInputs = element.querySelectorAll('input');
-  for (var i = 0; i < elementInputs.length; i++) {
-    if (elementInputs[i].name !== method) {
-      elementInputs[i].disabled = true;
+var switchTabs = function (evt, element, class1, class2, method) {
+  if (evt.target.id) {
+    var classToUnhide = element.querySelector('.' + evt.target.id + '-wrap') ? '.' + evt.target.id + '-wrap' : '.' + evt.target.id;
+    element.querySelector(classToUnhide).classList.remove('visually-hidden');
+    var inputsToEnable = element.querySelector(classToUnhide).querySelectorAll('input');
+    for (var j = 0; j < inputsToEnable.length; j++) {
+      inputsToEnable[j].disabled = false;
     }
-  }
-  var inputsToEnable = element.querySelector(classToRemove).querySelectorAll('input');
-  for (var j = 0; j < inputsToEnable.length; j++) {
-    inputsToEnable[j].disabled = false;
+  } else {
+    element.querySelector(class1).classList.add('visually-hidden');
+    element.querySelector(class2).classList.add('visually-hidden');
+    var elementInputs = element.querySelectorAll('input');
+    for (var i = 0; i < elementInputs.length; i++) {
+      if (elementInputs[i].name !== method) {
+        elementInputs[i].disabled = true;
+      }
+    }
   }
 };
 
 var onPaymentTabClick = function (evt) {
-  switchTabs(evt, paymentElement, '.payment__card-wrap', '.payment__cash-wrap', 'payment__card', 'pay-method');
+  switchTabs(evt, paymentElement, '.payment__card-wrap', '.payment__cash-wrap', 'pay-method');
 };
 
 var onDeliveryTabClick = function (evt) {
-  switchTabs(evt, deliveryElement, '.deliver__store', '.deliver__courier', 'deliver__store', 'method-deliver');
+  switchTabs(evt, deliveryElement, '.deliver__store', '.deliver__courier', 'method-deliver');
 };
 
 var buyElement = document.querySelector('#buy-form');
