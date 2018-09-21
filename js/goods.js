@@ -217,3 +217,65 @@ var renderOrderCardsTotal = function (goodAmount, goods) {
 };
 
 renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
+
+// Price range filter code
+var onLeftRangeButtonDown = function (evt) {
+  var startCoordsX = evt.clientX;
+
+  var onRangeMouseMove = function (moveEvt) {
+    moveEvt.preventDefault();
+    var shiftX = startCoordsX - moveEvt.clientX;
+    startCoordsX = moveEvt.clientX;
+    var leftButtonShift = rangeButtonLeftElement.offsetLeft - shiftX;
+    if (leftButtonShift >= 0 && leftButtonShift <= rangeButtonRightElement.offsetLeft) {
+      rangeFillLineElement.style.left = leftButtonShift.toString() + 'px';
+      rangeButtonLeftElement.style.left = leftButtonShift.toString() + 'px';
+    }
+  };
+  var onRangeMouseUp = function (upEvt) {
+    upEvt.preventDefault();
+    rangeFilterElement.querySelector('.range__price--min').textContent = (Math.round(priceRange * rangeButtonLeftElement.offsetLeft / rangeFilterWidth)).toString();
+    document.removeEventListener('mousemove', onRangeMouseMove);
+    document.removeEventListener('mouseup', onRangeMouseUp);
+  };
+  document.addEventListener('mousemove', onRangeMouseMove);
+  document.addEventListener('mouseup', onRangeMouseUp);
+};
+
+var onRightRangeButtonDown = function (evt) {
+  var startCoordsX = evt.clientX;
+
+  var onRangeMouseMove = function (moveEvt) {
+    moveEvt.preventDefault();
+    var shiftX = startCoordsX - moveEvt.clientX;
+    startCoordsX = moveEvt.clientX;
+    var rightButtonShift = rangeButtonRightElement.offsetLeft - shiftX;
+    if (rightButtonShift >= rangeButtonLeftElement.offsetLeft && rightButtonShift <= rangeFilterWidth) {
+      rangeFillLineElement.style.right = (rangeFilterWidth - rightButtonShift).toString() + 'px';
+      rangeButtonRightElement.style.left = rightButtonShift.toString() + 'px';
+    }
+  };
+  var onRangeMouseUp = function (upEvt) {
+    upEvt.preventDefault();
+    rangeFilterElement.querySelector('.range__price--max').textContent = (Math.round(priceRange * rangeButtonRightElement.offsetLeft / rangeFilterWidth)).toString();
+    document.removeEventListener('mousemove', onRangeMouseMove);
+    document.removeEventListener('mouseup', onRangeMouseUp);
+  };
+  document.addEventListener('mousemove', onRangeMouseMove);
+  document.addEventListener('mouseup', onRangeMouseUp);
+};
+
+var rangeFilterElement = document.querySelector('.range');
+var rangeFilterWidth = rangeFilterElement.getBoundingClientRect().width;
+
+// set initial price from initial conditions
+var priceRange = GOOD_MAX_PRICE - GOOD_MIN_PRICE;
+rangeFilterElement.querySelector('.range__price--min').textContent = priceRange / 100 * 15;
+rangeFilterElement.querySelector('.range__price--max').textContent = priceRange / 100 * 81;
+
+var rangeButtonLeftElement = rangeFilterElement.querySelector('.range__btn--left');
+var rangeButtonRightElement = rangeFilterElement.querySelector('.range__btn--right');
+var rangeFillLineElement = rangeFilterElement.querySelector('.range__fill-line');
+
+rangeButtonLeftElement.addEventListener('mousedown', onLeftRangeButtonDown);
+rangeButtonRightElement.addEventListener('mousedown', onRightRangeButtonDown);
