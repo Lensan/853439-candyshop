@@ -31,12 +31,11 @@ var GOOD_MIN_ENERGY = 70;
 var GOOD_MAX_ENERGY = 500;
 
 var GOODS_AMOUNT_TOTAL = 26;
-var GOODS_ORDERED_AMOUNT = 3;
-var GOOD_ORDER_MIN_AMOUNT = 1;
-var GOOD_ORDER_MAX_AMOUNT = 3;
 var PATH_TO_PIC = 'img/cards/';
 var NUMBER_OF_REPETITIONS = 100;
 var GOOD_CONTENT_MAX_AMOUNT = 8;
+
+var ENTER_KEY = 'Enter';
 
 var getRandomNumber = function (min, max) {
   return Math.floor(Math.random() * (max + 1 - min) + min);
@@ -62,6 +61,32 @@ var getRandomIndexesArray = function (indexesAmount, arrayLength) {
     indexesInUse.push(index);
   }
   return indexesInUse;
+};
+
+var getParentElement = function (evt, className) {
+  var element = evt.target;
+  var isElementFound = false;
+  while (!isElementFound && element.parentNode.nodeName !== '#document') {
+    element = element.parentNode;
+    if (element.classList.contains(className)) {
+      isElementFound = true;
+    }
+  }
+  return element;
+};
+
+var getRegexpValue = function (value, expression) {
+  var regexpValue = '';
+  var regexp = new RegExp(expression);
+  var result = value.match(regexp);
+  if (result) {
+    regexpValue = result[0];
+  }
+  return regexpValue;
+};
+
+var checkObjectIsEmpty = function (obj) {
+  return Object.keys(obj).length === 0;
 };
 
 var generateGoodContent = function (contents) {
@@ -151,7 +176,7 @@ var createCatalogCard = function (template, good) {
   return card;
 };
 
-var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents) {
+var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents, cardsElement) {
   var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
   var goodData = generateGoodsData(goodAmount, goodNames, goodPictures, goodContents);
   var fragment = document.createDocumentFragment();
@@ -159,64 +184,251 @@ var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goo
     var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
     fragment.appendChild(cardElement);
   }
-  var catalogCardsElement = document.querySelector('.catalog__cards-wrap');
-  catalogCardsElement.querySelector('.catalog__cards').classList.remove('catalog__cards--load');
-  catalogCardsElement.querySelector('.catalog__load').classList.add('visually-hidden');
-  catalogCardsElement.querySelector('.catalog__cards').appendChild(fragment);
+  cardsElement.appendChild(fragment);
   return goodData;
 };
 
-var goodsDataTotal = renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS);
+var catalogCardsWrapElement = document.querySelector('.catalog__cards-wrap');
+var catalogCardsElement = catalogCardsWrapElement.querySelector('.catalog__cards');
 
-var getGoodsForOrder = function (goodAmount, goods) {
-  var goodsForOrder = [];
-  var indexes = getRandomIndexesArray(goodAmount, goods.length);
-  for (var i = 0; i < indexes.length; i++) {
-    goodsForOrder.push(goods[indexes[i]]);
-  }
-  return goodsForOrder;
+document.addEventListener('DOMContentLoaded', function () {
+  catalogCardsElement.classList.remove('catalog__cards--load');
+  catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
+  window.goodsDataTotal = renderCatalogCardsTotal(GOODS_AMOUNT_TOTAL, GOOD_NAMES, GOOD_PICTURES, GOOD_CONTENTS, catalogCardsElement);
+  catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
+});
+
+var addRemoveCardComposition = function (element) {
+  element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
 };
 
-var getGoodId = function (path) {
-  var id = '';
-  var regexp = new RegExp('(?<=\\/.+\\/)(.+)(?=\\.)');
-  var ids = path.match(regexp);
-  if (ids) {
-    id = ids[0];
-  }
-  return id;
+var addRemoveCardFavorite = function (evt) {
+  evt.target.classList.toggle('card__btn-favorite--selected');
+  evt.target.blur();
 };
 
-var createOrderCard = function (template, good) {
+var onCatalogCardElementClick = function (evt) {
+  var targetElement = evt.target;
+  var cardElement = getParentElement(evt, 'catalog__card');
+  if (targetElement.classList.contains('card__btn-composition')) {
+    addRemoveCardComposition(cardElement);
+  } else if (targetElement.classList.contains('card__btn-favorite')) {
+    evt.preventDefault();
+    addRemoveCardFavorite(evt);
+  } else if (targetElement.classList.contains('card__btn')) {
+    evt.preventDefault();
+    createAndRenderOrderCard(evt);
+  }
+};
+
+var getGoodFromInitialData = function (name) {
+  var goodData = {};
+  for (var i = 0; i < window.goodsDataTotal.length; i++) {
+    if (name === window.goodsDataTotal[i].name) {
+      goodData = Object.assign(goodData, window.goodsDataTotal[i]);
+    }
+  }
+  return goodData;
+};
+
+var getCardDataForOrder = function (evt) {
+  var cardElement = getParentElement(evt, 'catalog__card');
+  var cardData = {};
+  if (!cardElement.classList.contains(CARD_SOON_CLASS)) {
+    cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent);
+  }
+  return cardData;
+};
+
+var addSingleButtonListener = function (button, action, mouseEvent, keyboardEvent) {
+  button.addEventListener(mouseEvent, action);
+  button.addEventListener(keyboardEvent, action);
+};
+
+var increaseGoodOrderedCount = function (goodData) {
+  var goodsOrderedTotal = document.querySelectorAll('.card-order');
+  for (var i = 0; i < goodsOrderedTotal.length; i++) {
+    var goodTitle = goodsOrderedTotal[i].querySelector('.card-order__title').textContent;
+    if (goodTitle === goodData.name) {
+      var goodOrderedElement = goodsOrderedTotal[i].querySelector('.card-order__count');
+      if ((parseInt(goodOrderedElement.value, 10) + 1) <= goodData.amount) {
+        goodOrderedElement.value = parseInt(goodOrderedElement.value, 10) + 1;
+      }
+    }
+  }
+};
+
+var changeMainBasketHeader = function (goodsData) {
+  var mainBasketHeaderElement = document.querySelector('.main-header__basket');
+  if (goodsData.goodsCountTotal > 0) {
+    mainBasketHeaderElement.textContent = 'В корзине ' + goodsData.goodsCountTotal + ' товаров на сумму ' + goodsData.goodsCostTotal + ' ₽';
+  } else {
+    mainBasketHeaderElement.textContent = 'В корзине ничего нет';
+  }
+};
+
+window.goodsOrderedTotal = [];
+var checkAddGoodInOrderArray = function (goodData) {
+  var isGoodInOrder = false;
+  var goodsOrdered = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrdered.length; i++) {
+    if (goodsOrdered[i].name === goodData.name) {
+      isGoodInOrder = true;
+    }
+  }
+  if (!isGoodInOrder) {
+    goodsOrdered.push(goodData);
+  }
+  return isGoodInOrder;
+};
+
+var createAndRenderOrderCard = function (evt) {
+  var goodOrderedData = getCardDataForOrder(evt);
+  if (!checkObjectIsEmpty(goodOrderedData)) {
+    var isGoodOrdered = checkAddGoodInOrderArray(goodOrderedData);
+    if (!isGoodOrdered) {
+      var orderCardElement = renderOrderCard(goodOrderedData);
+
+      var orderCloseButton = orderCardElement.querySelector('.card-order__close');
+      addSingleButtonListener(orderCloseButton, onOrderCloseButtonClickOrPress, 'click', 'keydown');
+
+      var orderDecreaseButton = orderCardElement.querySelector('.card-order__btn--decrease');
+      addSingleButtonListener(orderDecreaseButton, onOrderCountButtonsClickOrPress, 'click', 'keydown');
+
+      var orderIncreaseButton = orderCardElement.querySelector('.card-order__btn--increase');
+      addSingleButtonListener(orderIncreaseButton, onOrderCountButtonsClickOrPress, 'click', 'keydown');
+
+      var orderCountButton = orderCardElement.querySelector('.card-order__count');
+      addSingleButtonListener(orderCountButton, onOrderCountButtonsClickOrPress, 'click', 'keyup');
+    } else {
+      increaseGoodOrderedCount(goodOrderedData);
+    }
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
+  }
+};
+
+var removeGoodFromTotalArray = function (goodName) {
+  var goodsOrdered = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrdered.length; i++) {
+    if (goodsOrdered[i].name === goodName) {
+      goodsOrdered.splice(i, 1);
+    }
+  }
+};
+
+var removeGoodFromOrder = function (evt) {
+  var cardOrderElement = getParentElement(evt, 'card-order');
+  cardOrderElement.parentNode.removeChild(cardOrderElement);
+  changeGoodCardsElement(document.querySelector('.goods__cards'));
+  removeGoodFromTotalArray(cardOrderElement.querySelector('.card-order__title').textContent);
+};
+
+var checkOrderCountForIncrease = function (countElement, goodOrderedName) {
+  var isOrderCountToBeIncreased = false;
+  var goodsOrderedData = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrderedData.length; i++) {
+    if (goodsOrderedData[i].name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= goodsOrderedData[i].amount) {
+      isOrderCountToBeIncreased = true;
+    }
+  }
+  return isOrderCountToBeIncreased;
+};
+
+var reduceOrderCountIfIncreased = function (countElement, goodOrderedName) {
+  var goodsOrderedData = window.goodsOrderedTotal;
+  for (var i = 0; i < goodsOrderedData.length; i++) {
+    if (goodsOrderedData[i].name === goodOrderedName && parseInt(countElement.value, 10) > goodsOrderedData[i].amount) {
+      countElement.value = goodsOrderedData[i].amount;
+    }
+  }
+};
+
+var increaseDecreaseCheckOrderCount = function (evt) {
+  var goodsCardElement = getParentElement(evt, 'goods_card');
+  var cardOrderTitle = goodsCardElement.querySelector('.card-order__title').textContent;
+  var cardOrderCountElement = goodsCardElement.querySelector('.card-order__count');
+  if (evt.target.classList.contains('card-order__btn--increase') && checkOrderCountForIncrease(cardOrderCountElement, cardOrderTitle)) {
+    cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) + 1;
+  } else {
+    if (evt.target.classList.contains('card-order__btn--decrease')) {
+      cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) - 1;
+    }
+    if (parseInt(cardOrderCountElement.value, 10) <= 0 || !parseInt(cardOrderCountElement.value, 10)) {
+      removeGoodFromOrder(evt);
+    } else {
+      reduceOrderCountIfIncreased(cardOrderCountElement, cardOrderTitle);
+    }
+  }
+};
+
+var onOrderCloseButtonClickOrPress = function (evt) {
+  if (evt.type === 'click' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    evt.preventDefault();
+    removeGoodFromOrder(evt);
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
+  }
+};
+
+var onOrderCountButtonsClickOrPress = function (evt) {
+  if (evt.type === 'click' || evt.type === 'keyup' || (evt.type === 'keydown' && evt.key === ENTER_KEY)) {
+    evt.preventDefault();
+    increaseDecreaseCheckOrderCount(evt);
+    var goodsOrderedData = checkOrderCardsData(document.querySelector('.goods__cards'));
+    changeMainBasketHeader(goodsOrderedData);
+  }
+};
+
+var createOrderCard = function (template, order) {
   var card = template.cloneNode(true);
-  card.querySelector('.card-order__title').textContent = good.name;
+  card.querySelector('.card-order__title').textContent = order.name;
   var cardImageElement = card.querySelector('.card-order__img');
-  cardImageElement.src = good.picture;
-  cardImageElement.alt = good.name;
-  card.querySelector('.card-order__price').textContent = good.price + ' ₽';
+  cardImageElement.src = order.picture;
+  cardImageElement.alt = order.name;
+  card.querySelector('.card-order__price').textContent = order.price;
   var cardCountElement = card.querySelector('.card-order__count');
-  var goodId = getGoodId(good.picture);
+  var goodId = getRegexpValue(order.picture, '.+(?=\\.)');
+  goodId = getRegexpValue(goodId, '(?<=\\/)\\w+.\\w+$');
   cardCountElement.name = goodId;
-  cardCountElement.value = getRandomNumber(GOOD_ORDER_MIN_AMOUNT, GOOD_ORDER_MAX_AMOUNT);
+  cardCountElement.value = 1;
   cardCountElement.id = 'card-order__' + goodId;
   return card;
 };
 
-var renderOrderCardsTotal = function (goodAmount, goods) {
-  var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
-  var fragment = document.createDocumentFragment();
-  var goodsOrdered = getGoodsForOrder(goodAmount, goods);
-  for (var i = 0; i < goodsOrdered.length; i++) {
-    var cardElement = createOrderCard(cardOrderTemplate, goodsOrdered[i]);
-    fragment.appendChild(cardElement);
+var checkOrderCardsData = function (element) {
+  var goodsOrderedData = {};
+  goodsOrderedData.goodsCountTotal = 0;
+  goodsOrderedData.goodsCostTotal = 0;
+  if (element.querySelector('.card-order')) {
+    var orderCountElements = element.querySelectorAll('.card-order__count');
+    var orderPriceElements = element.querySelectorAll('.card-order__price');
+    for (var i = 0; i < orderCountElements.length; i++) {
+      var count = parseInt(orderCountElements[i].value, 10);
+      goodsOrderedData.goodsCountTotal += count;
+      var price = parseInt(getRegexpValue(orderPriceElements[i].textContent, '\\d+'), 10);
+      goodsOrderedData.goodsCostTotal += count * price;
+    }
   }
-  var goodCardsElement = document.querySelector('.goods__cards');
-  goodCardsElement.classList.remove('goods__cards--empty');
-  goodCardsElement.querySelector('.goods__card-empty').classList.add('visually-hidden');
-  goodCardsElement.appendChild(fragment);
+  return goodsOrderedData;
 };
 
-renderOrderCardsTotal(GOODS_ORDERED_AMOUNT, goodsDataTotal);
+var changeGoodCardsElement = function (element) {
+  if (checkOrderCardsData(element).goodsCountTotal === 0) {
+    element.classList.toggle('goods__cards--empty');
+    element.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
+  }
+};
+
+var renderOrderCard = function (goodOrdered) {
+  var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
+  var cardElement = createOrderCard(cardOrderTemplate, goodOrdered);
+
+  var goodCardsElement = document.querySelector('.goods__cards');
+  changeGoodCardsElement(goodCardsElement);
+  goodCardsElement.appendChild(cardElement);
+  return cardElement;
+};
 
 // FORM VALIDATION AND MANIPULATION FILE
 var checkInputElementsTotal = function () {
