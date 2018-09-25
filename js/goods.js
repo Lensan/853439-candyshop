@@ -673,4 +673,3 @@ rangeFilterElement.querySelector('.range__price--max').textContent = GOOD_MAX_PR
 
 rangeButtonLeftElement.addEventListener('mousedown', onLeftRangeButtonDown);
 rangeButtonRightElement.addEventListener('mousedown', onRightRangeButtonDown);
-
