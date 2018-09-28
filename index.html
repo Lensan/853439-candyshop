@@ -232,7 +232,7 @@
                     </p>
 
                     <p class="text-input text-input--light payment__input-wrap payment__input-wrap--cvc">
-                      <input type="text" class="text-input__input" name="card-cvc" id="payment__card-cvc" placeholder="CVC">
+                      <input type="text" class="text-input__input" name="card-cvc" id="payment__card-cvc" placeholder="CVC" pattern="[1-9]{1}[0-9]{2}$" required>
                       <label class="text-input__label text-input__label--lock" for="payment__card-cvc">CVC</label>
                     </p>
 
@@ -490,10 +490,12 @@
     </div>
   </template>
 
-  <script src="js/data.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/backend.js"></script>
   <script src="js/catalog.js"></script>
   <script src="js/goods.js"></script>
   <script src="js/order.js"></script>
+  <script src="js/form.js"></script>
   <script src="js/filter.js"></script>
 
 </body>
