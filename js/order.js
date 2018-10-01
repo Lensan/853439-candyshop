@@ -1,20 +1,18 @@
 'use strict';
 
 (function () {
-  window.order = {
-    PATH_TO_MAP: 'img/map/',
-    AddressMap: {
-      'academicheskaya': 'проспект Науки, д. 19, корп. 3, литер А, ТК «Платформа», 3-й этаж, секция 310',
-      'vasileostrovskaya': 'Средний проспект В.О., д. 27',
-      'rechka': 'улица Савушкина, д. 7',
-      'petrogradskaya': 'улица Льва Толстого, д. 4',
-      'proletarskaya': 'проспект Обуховской Обороны, д. 227',
-      'vostaniya': 'улица Гончарная, д. 11',
-      'prosvesheniya': 'проспект Просвещения, д. 62',
-      'frunzenskaya': 'Московский проспект, д. 65',
-      'chernishevskaya': 'Кирочная улица, д. 14',
-      'tehinstitute': '1-я Красноармейская улица, д. 4'
-    }
+  var PATH_TO_MAP = 'img/map/';
+  var AddressMap = {
+    'academicheskaya': 'проспект Науки, д. 19, корп. 3, литер А, ТК «Платформа», 3-й этаж, секция 310',
+    'vasileostrovskaya': 'Средний проспект В.О., д. 27',
+    'rechka': 'улица Савушкина, д. 7',
+    'petrogradskaya': 'улица Льва Толстого, д. 4',
+    'proletarskaya': 'проспект Обуховской Обороны, д. 227',
+    'vostaniya': 'улица Гончарная, д. 11',
+    'prosvesheniya': 'проспект Просвещения, д. 62',
+    'frunzenskaya': 'Московский проспект, д. 65',
+    'chernishevskaya': 'Кирочная улица, д. 14',
+    'tehinstitute': '1-я Красноармейская улица, д. 4'
   };
 
   var checkCardWithLune = function (cardNumber) {
@@ -41,7 +39,7 @@
     element.parentNode.classList.add('text-input--error');
   };
 
-  window.order.removeErrorClass = function (element) {
+  var removeErrorClass = function (element) {
     element.parentNode.classList.remove('text-input--error');
   };
 
@@ -65,7 +63,7 @@
       addErrorClass(element);
     } else {
       element.setCustomValidity('');
-      window.order.removeErrorClass(element);
+      removeErrorClass(element);
     }
     return element.validity.valid;
   };
@@ -81,7 +79,7 @@
 
   var checkInputElementsTotal = function () {
     var inputsTotalValid = true;
-    var inputElements = window.order.formInputElements;
+    var inputElements = formInputElements;
     for (var i = 0; i < inputElements.length; i++) {
       if (!inputElements[i].disabled) {
         var isElementValid = checkElementValidity(inputElements[i]);
@@ -107,7 +105,7 @@
   var onBankCardInputFieldsBlur = function (evt) {
     var targetElement = evt.target;
     if (!targetElement.validity.valid) {
-      window.order.buyElement.reportValidity();
+      buyElement.reportValidity();
     }
     var isElementValid = checkElementValidity(targetElement);
     if (targetElement.id === 'payment__card-number' && isElementValid) {
@@ -118,7 +116,7 @@
   var onDeliveryInputFieldsBlur = function (evt) {
     var targetElement = evt.target;
     if (!targetElement.validity.valid) {
-      window.order.buyElement.reportValidity();
+      buyElement.reportValidity();
     }
     checkElementValidity(targetElement);
   };
@@ -127,13 +125,13 @@
     var targetElement = evt.target;
     if (targetElement.type !== 'radio') {
       targetElement.setCustomValidity('');
-      window.order.removeErrorClass(targetElement);
+      removeErrorClass(targetElement);
     }
   };
 
   var switchTabs = function (evt, element, class1, class2) {
     var targetId = evt.target.htmlFor;
-    var inputId = window.order.buyElement.querySelector('#' + targetId);
+    var inputId = buyElement.querySelector('#' + targetId);
     if (inputId) {
       if (!inputId.disabled) {
         element.querySelector(class1).classList.add('visually-hidden');
@@ -149,61 +147,76 @@
   };
 
   var onPaymentTabClick = function (evt) {
-    switchTabs(evt, window.order.paymentElement, '.payment__card-wrap', '.payment__cash-wrap');
+    switchTabs(evt, paymentElement, '.payment__card-wrap', '.payment__cash-wrap');
   };
 
   var onDeliveryTabClick = function (evt) {
-    switchTabs(evt, window.order.deliveryElement, '.deliver__store', '.deliver__courier');
+    switchTabs(evt, deliveryElement, '.deliver__store', '.deliver__courier');
   };
 
-  window.order.targetInnerHTML = '';
+  var targetInnerHTML = '';
   var onDeliveryStoreItemClick = function (evt) {
-    var deliveryStoreImgElement = window.order.deliveryStoreMapImgElement;
+    var deliveryStoreImgElement = deliveryStoreMapImgElement;
     if (evt.target.value) {
       if (!evt.target.disabled) {
-        deliveryStoreImgElement.src = window.order.PATH_TO_MAP + evt.target.value + '.jpg';
-        deliveryStoreImgElement.alt = window.order.targetInnerHTML;
-        window.order.targetInnerHTML = '';
-        window.order.deliveryStoreDescribeElement.textContent = window.order.AddressMap[evt.target.value];
+        deliveryStoreImgElement.src = PATH_TO_MAP + evt.target.value + '.jpg';
+        deliveryStoreImgElement.alt = targetInnerHTML;
+        targetInnerHTML = '';
+        deliveryStoreDescribeElement.textContent = AddressMap[evt.target.value];
       }
     } else {
-      window.order.targetInnerHTML = evt.target.innerHTML;
+      targetInnerHTML = evt.target.innerHTML;
     }
   };
 
-  window.order.buyElement = document.querySelector('#buy-form');
-  window.order.buyElement.addEventListener('input', onUserInputFieldsInput);
-  window.order.formInputElements = window.order.buyElement.querySelectorAll('input[class="text-input__input"]');
+  var buyElement = document.querySelector('#buy-form');
+  buyElement.addEventListener('input', onUserInputFieldsInput);
+  var formInputElements = buyElement.querySelectorAll('input[class="text-input__input"]');
 
-  window.order.contactDataInputsElement = window.order.buyElement.querySelector('.contact-data__inputs');
-  window.order.contactDataInputsElement.addEventListener('blur', onContactDataInputFieldsBlur, true);
+  var contactDataInputsElement = buyElement.querySelector('.contact-data__inputs');
+  contactDataInputsElement.addEventListener('blur', onContactDataInputFieldsBlur, true);
 
-  window.order.paymentInputsElement = window.order.buyElement.querySelector('.payment__inputs');
-  window.order.paymentInputsElement.addEventListener('blur', onBankCardInputFieldsBlur, true);
+  var paymentInputsElement = buyElement.querySelector('.payment__inputs');
+  paymentInputsElement.addEventListener('blur', onBankCardInputFieldsBlur, true);
 
-  window.order.deliveryElement = window.order.buyElement.querySelector('.deliver');
-  window.order.deliveryStoreMapImgElement = window.order.deliveryElement.querySelector('.deliver__store-map-img');
-  window.order.deliveryStoreDescribeElement = window.order.deliveryElement.querySelector('.deliver__store-describe');
-  var deliveryCourierElement = window.order.deliveryElement.querySelector('.deliver__courier');
+  var deliveryElement = buyElement.querySelector('.deliver');
+  var deliveryStoreMapImgElement = deliveryElement.querySelector('.deliver__store-map-img');
+  var deliveryStoreDescribeElement = deliveryElement.querySelector('.deliver__store-describe');
+  var deliveryCourierElement = deliveryElement.querySelector('.deliver__courier');
   deliveryCourierElement.addEventListener('blur', onDeliveryInputFieldsBlur, true);
 
-  window.order.paymentElement = window.order.buyElement.querySelector('.payment');
-  var paymentMethodElement = window.order.paymentElement.querySelector('.payment__method');
+  var paymentElement = buyElement.querySelector('.payment');
+  var paymentMethodElement = paymentElement.querySelector('.payment__method');
   paymentMethodElement.addEventListener('click', onPaymentTabClick);
 
-  var deliveryToggleElement = window.order.deliveryElement.querySelector('.deliver__toggle');
+  var deliveryToggleElement = deliveryElement.querySelector('.deliver__toggle');
   deliveryToggleElement.addEventListener('click', onDeliveryTabClick);
 
-  var deliveryStoreListElement = window.order.deliveryElement.querySelector('.deliver__store-list');
+  var deliveryStoreListElement = deliveryElement.querySelector('.deliver__store-list');
   deliveryStoreListElement.addEventListener('click', onDeliveryStoreItemClick);
 
   var onSubmitButtonClick = function (evt) {
     var isFormValid = checkInputElementsTotal(evt);
     if (isFormValid) {
-      window.backend.save(new FormData(window.order.buyElement), window.modal.onSuccessLoad, window.modal.onErrorLoad);
+      window.backend.save(new FormData(buyElement), window.modal.onSuccessLoad, window.modal.onErrorLoad);
       evt.preventDefault();
     }
   };
-  window.order.submitButtonElement = window.order.buyElement.querySelector('.buy__submit-btn');
-  window.order.submitButtonElement.addEventListener('click', onSubmitButtonClick);
+  var submitButtonElement = buyElement.querySelector('.buy__submit-btn');
+  submitButtonElement.addEventListener('click', onSubmitButtonClick);
+
+  window.order = {
+    PATH_TO_MAP: PATH_TO_MAP,
+    AddressMap: AddressMap,
+    submitButtonElement: submitButtonElement,
+    buyElement: buyElement,
+    paymentElement: paymentElement,
+    deliveryElement: deliveryElement,
+    contactDataInputsElement: contactDataInputsElement,
+    paymentInputsElement: paymentInputsElement,
+    formInputElements: formInputElements,
+    deliveryStoreMapImgElement: deliveryStoreMapImgElement,
+    deliveryStoreDescribeElement: deliveryStoreDescribeElement,
+    removeErrorClass: removeErrorClass
+  };
 })();

@@ -3,9 +3,10 @@
 (function () {
   var getGoodFromInitialData = function (name) {
     var goodData = {};
-    for (var i = 0; i < window.catalog.goodsDataTotal.length; i++) {
-      if (name === window.catalog.goodsDataTotal[i].name) {
-        goodData = Object.assign(goodData, window.catalog.goodsDataTotal[i]);
+    var goodInitialData = window.catalog.goodsDataTotal;
+    for (var i = 0; i < goodInitialData.length; i++) {
+      if (name === goodInitialData[i].name) {
+        goodData = Object.assign(goodData, goodInitialData[i]);
       }
     }
     return goodData;
@@ -20,12 +21,14 @@
     return cardData;
   };
 
+  var goodCardsElement = document.querySelector('.goods__cards');
+
   var increaseGoodOrderedCount = function (goodData) {
-    var goodsOrderedTotal = window.goods.goodCardsElement.querySelectorAll('.card-order');
-    for (var i = 0; i < goodsOrderedTotal.length; i++) {
-      var goodTitle = goodsOrderedTotal[i].querySelector('.card-order__title').textContent;
+    var goodsOrdered = goodCardsElement.querySelectorAll('.card-order');
+    for (var i = 0; i < goodsOrdered.length; i++) {
+      var goodTitle = goodsOrdered[i].querySelector('.card-order__title').textContent;
       if (goodTitle === goodData.name) {
-        var goodOrderedElement = goodsOrderedTotal[i].querySelector('.card-order__count');
+        var goodOrderedElement = goodsOrdered[i].querySelector('.card-order__count');
         if ((parseInt(goodOrderedElement.value, 10) + 1) <= goodData.amount) {
           goodOrderedElement.value = parseInt(goodOrderedElement.value, 10) + 1;
         }
@@ -33,28 +36,25 @@
     }
   };
 
-  window.goods = {
-    goodsOrderedTotal: [],
-    changeMainBasketHeader: function (goodsData) {
-      var mainBasketHeaderElement = document.querySelector('.main-header__basket');
-      if (goodsData.goodsCountTotal) {
-        mainBasketHeaderElement.textContent = 'В корзине ' + goodsData.goodsCountTotal + ' товаров на сумму ' + goodsData.goodsCostTotal + ' ₽';
-      } else {
-        mainBasketHeaderElement.textContent = 'В корзине ничего нет';
-      }
+  var changeMainBasketHeader = function (goodsData) {
+    var mainBasketHeaderElement = document.querySelector('.main-header__basket');
+    if (goodsData.goodsCountTotal) {
+      mainBasketHeaderElement.textContent = 'В корзине ' + goodsData.goodsCountTotal + ' товаров на сумму ' + goodsData.goodsCostTotal + ' ₽';
+    } else {
+      mainBasketHeaderElement.textContent = 'В корзине ничего нет';
     }
   };
 
+  var goodsOrderedTotal = [];
   var checkAddGoodInOrderArray = function (goodData) {
     var isGoodInOrder = false;
-    var goodsOrdered = window.goods.goodsOrderedTotal;
-    for (var i = 0; i < goodsOrdered.length; i++) {
-      if (goodsOrdered[i].name === goodData.name) {
+    for (var i = 0; i < goodsOrderedTotal.length; i++) {
+      if (goodsOrderedTotal[i].name === goodData.name) {
         isGoodInOrder = true;
       }
     }
     if (!isGoodInOrder) {
-      goodsOrdered.push(goodData);
+      goodsOrderedTotal.push(goodData);
     }
     return isGoodInOrder;
   };
@@ -63,7 +63,8 @@
     return Object.keys(obj).length === 0;
   };
 
-  window.goods.createAndRenderOrderCard = function (evt) {
+  var createAndRenderOrderCard = function (evt) {
+    goodsOrderedTotal = window.goods.goodsOrderedTotal;
     var goodOrderedData = getCardDataForOrder(evt);
     if (!checkObjectIsEmpty(goodOrderedData)) {
       var isGoodOrdered = checkAddGoodInOrderArray(goodOrderedData);
@@ -85,16 +86,15 @@
       } else {
         increaseGoodOrderedCount(goodOrderedData);
       }
-      var goodsOrderedData = checkOrderCardsData(window.goods.goodCardsElement);
-      window.goods.changeMainBasketHeader(goodsOrderedData);
+      var goodsOrderedData = checkOrderCardsData(goodCardsElement);
+      changeMainBasketHeader(goodsOrderedData);
     }
   };
 
   var removeGoodFromTotalArray = function (goodName) {
-    var goodsOrdered = window.goods.goodsOrderedTotal;
-    for (var i = 0; i < goodsOrdered.length; i++) {
-      if (goodsOrdered[i].name === goodName) {
-        goodsOrdered.splice(i, 1);
+    for (var i = 0; i < goodsOrderedTotal.length; i++) {
+      if (goodsOrderedTotal[i].name === goodName) {
+        goodsOrderedTotal.splice(i, 1);
       }
     }
   };
@@ -102,17 +102,15 @@
   var removeGoodFromOrder = function (evt) {
     var cardOrderElement = window.catalog.getParentElement(evt, 'card-order');
     cardOrderElement.parentNode.removeChild(cardOrderElement);
-    var goodCardsElement = window.goods.goodCardsElement;
-    var initialGoodCount = window.goods.changeGoodCardsElement(goodCardsElement);
+    var initialGoodCount = changeGoodCardsElement(goodCardsElement);
     changeFormElements(goodCardsElement, initialGoodCount);
     removeGoodFromTotalArray(cardOrderElement.querySelector('.card-order__title').textContent);
   };
 
   var checkOrderCountForIncrease = function (countElement, goodOrderedName) {
     var isOrderCountToBeIncreased = false;
-    var goodsOrderedData = window.goods.goodsOrderedTotal;
-    for (var i = 0; i < goodsOrderedData.length; i++) {
-      if (goodsOrderedData[i].name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= goodsOrderedData[i].amount) {
+    for (var i = 0; i < goodsOrderedTotal.length; i++) {
+      if (goodsOrderedTotal[i].name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= goodsOrderedTotal[i].amount) {
         isOrderCountToBeIncreased = true;
       }
     }
@@ -120,10 +118,9 @@
   };
 
   var reduceOrderCountIfIncreased = function (countElement, goodOrderedName) {
-    var goodsOrderedData = window.goods.goodsOrderedTotal;
-    for (var i = 0; i < goodsOrderedData.length; i++) {
-      if (goodsOrderedData[i].name === goodOrderedName && parseInt(countElement.value, 10) > goodsOrderedData[i].amount) {
-        countElement.value = goodsOrderedData[i].amount;
+    for (var i = 0; i < goodsOrderedTotal.length; i++) {
+      if (goodsOrderedTotal[i].name === goodOrderedName && parseInt(countElement.value, 10) > goodsOrderedTotal[i].amount) {
+        countElement.value = goodsOrderedTotal[i].amount;
       }
     }
   };
@@ -149,15 +146,15 @@
   var onOrderCloseButtonClickOrPress = function (evt) {
     evt.preventDefault();
     removeGoodFromOrder(evt);
-    var goodsOrderedData = checkOrderCardsData(window.goods.goodCardsElement);
-    window.goods.changeMainBasketHeader(goodsOrderedData);
+    var goodsOrderedData = checkOrderCardsData(goodCardsElement);
+    changeMainBasketHeader(goodsOrderedData);
   };
 
   var onOrderCountButtonsClickOrPress = function (evt) {
     evt.preventDefault();
     increaseDecreaseCheckOrderCount(evt);
-    var goodsOrderedData = checkOrderCardsData(window.goods.goodCardsElement);
-    window.goods.changeMainBasketHeader(goodsOrderedData);
+    var goodsOrderedData = checkOrderCardsData(goodCardsElement);
+    changeMainBasketHeader(goodsOrderedData);
   };
 
   var getRegexpValue = function (value, expression) {
@@ -186,11 +183,15 @@
     return card;
   };
 
+  var checkOrderDataIsEmpty = function (element) {
+    return !element.querySelector('.card-order');
+  };
+
   var checkOrderCardsData = function (element) {
     var goodsOrderedData = {};
     goodsOrderedData.goodsCountTotal = 0;
     goodsOrderedData.goodsCostTotal = 0;
-    if (element.querySelector('.card-order')) {
+    if (!checkOrderDataIsEmpty(element)) {
       var orderCountElements = element.querySelectorAll('.card-order__count');
       var orderPriceElements = element.querySelectorAll('.card-order__price');
       for (var i = 0; i < orderCountElements.length; i++) {
@@ -203,33 +204,38 @@
     return goodsOrderedData;
   };
 
-  window.goods.changeGoodCardsElement = function (element) {
-    var goodsCount = checkOrderCardsData(element).goodsCountTotal;
-    if (goodsCount === 0) {
+  var changeGoodCardsElement = function (element) {
+    var isGoodCardsEmpty = checkOrderDataIsEmpty(element);
+    if (isGoodCardsEmpty) {
       element.classList.toggle('goods__cards--empty');
       element.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
     }
-    return goodsCount;
+    return isGoodCardsEmpty;
   };
 
-  var changeFormElements = function (element, initCount) {
-    if (checkOrderCardsData(element).goodsCountTotal === 0) {
+  var changeFormElements = function (element, isOrderInitEmpty) {
+    if (checkOrderDataIsEmpty(element)) {
       window.form.setFormToDefaultValues(true);
-    } else if (initCount === 0) {
+    } else if (isOrderInitEmpty) {
       window.form.enableFormElements();
     }
   };
 
-  window.goods.goodCardsElement = document.querySelector('.goods__cards');
-
   var renderOrderCard = function (goodOrdered) {
     var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
     var cardElement = createOrderCard(cardOrderTemplate, goodOrdered);
-
-    var goodCardsElement = window.goods.goodCardsElement;
-    var initialGoodCount = window.goods.changeGoodCardsElement(goodCardsElement);
+    var orderInitState = changeGoodCardsElement(goodCardsElement);
     goodCardsElement.appendChild(cardElement);
-    changeFormElements(goodCardsElement, initialGoodCount);
+    changeFormElements(goodCardsElement, orderInitState);
     return cardElement;
+  };
+
+  window.goods = {
+    goodsOrderedTotal: goodsOrderedTotal,
+    goodCardsElement: goodCardsElement,
+    changeMainBasketHeader: changeMainBasketHeader,
+    changeGoodCardsElement: changeGoodCardsElement,
+    createAndRenderOrderCard: createAndRenderOrderCard,
+    checkOrderDataIsEmpty: checkOrderDataIsEmpty
   };
 })();

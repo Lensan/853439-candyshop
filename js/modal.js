@@ -3,15 +3,14 @@
 (function () {
   var ESCAPE_KEY = 'Escape';
 
-  window.modal = {
-    successElement: document.querySelector('.modal:last-of-type'),
-    errorElement: document.querySelector('.modal:first-of-type')
-  };
+  var successElement = document.querySelector('.modal:last-of-type');
+  var errorElement = document.querySelector('.modal:first-of-type');
 
   var closeModalPopup = function () {
-    window.modal.successElement.classList.add('modal--hidden');
-    window.modal.errorElement.classList.add('modal--hidden');
-    window.modal.closeElement.removeEventListener('click', onCloseButtonClick);
+    successElement.classList.add('modal--hidden');
+    errorElement.classList.add('modal--hidden');
+    var closeElement = window.modal.closeElement;
+    closeElement.removeEventListener('click', onCloseButtonClick);
     document.removeEventListener('keydown', onEscButtonPress);
   };
 
@@ -27,19 +26,25 @@
 
   var openModalPopup = function (modalElement) {
     modalElement.classList.remove('modal--hidden');
-    window.modal.closeElement = modalElement.querySelector('.modal__close');
-    window.modal.closeElement.addEventListener('click', onCloseButtonClick);
+    var closeElement = modalElement.querySelector('.modal__close');
+    closeElement.addEventListener('click', onCloseButtonClick);
+    window.modal.closeElement = closeElement;
     document.addEventListener('keydown', onEscButtonPress);
   };
 
-  window.modal.onSuccessLoad = function () {
-    openModalPopup(window.modal.successElement);
-    window.form.setFormToDefaultValues(false);
-    window.goods.changeMainBasketHeader(window.goods.goodsOrderedTotal);
-  };
-
-  window.modal.onErrorLoad = function (errorMessage) {
-    window.modal.errorElement.querySelector('.modal__message:first-of-type').textContent = errorMessage;
-    openModalPopup(window.modal.errorElement);
+  window.modal = {
+    closeElement: '',
+    onSuccessLoad: function () {
+      openModalPopup(successElement);
+      window.form.setFormToDefaultValues(false);
+      window.goods.changeMainBasketHeader(window.goods.goodsOrderedTotal);
+    },
+    onErrorLoad: function (errorMessage) {
+      errorElement.querySelector('.modal__message:first-of-type').textContent = errorMessage;
+      openModalPopup(errorElement);
+      if (window.goods.checkOrderDataIsEmpty(window.goods.goodCardsElement)) {
+        window.form.setFormToDefaultValues(true);
+      }
+    }
   };
 })();

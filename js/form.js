@@ -7,13 +7,11 @@
     element.querySelector('.toggle-btn__input:first-of-type').checked = true;
   };
 
-  window.form = {
-    enableDisableFormInputs: function (element, inputClass, isDisabled) {
-      var input = (inputClass === 'none') ? 'input' : 'input[class*="' + inputClass + '"]';
-      var elementInputs = element.querySelectorAll(input);
-      for (var i = 0; i < elementInputs.length; i++) {
-        elementInputs[i].disabled = isDisabled;
-      }
+  var enableDisableFormInputs = function (element, inputClass, isDisabled) {
+    var input = (inputClass === 'none') ? 'input' : 'input[class*="' + inputClass + '"]';
+    var elementInputs = element.querySelectorAll(input);
+    for (var i = 0; i < elementInputs.length; i++) {
+      elementInputs[i].disabled = isDisabled;
     }
   };
 
@@ -35,31 +33,35 @@
 
   var deliverStoreElement = window.order.buyElement.querySelector('.deliver__store');
 
-  window.form.setFormToDefaultValues = function (isInitial) {
-    var inputElements = window.order.formInputElements;
-    if (!isInitial) {
-      // clean the basket
-      removeAllGoodsFromOrder();
-      window.goods.changeGoodCardsElement(window.goods.goodCardsElement);
-      window.goods.goodsOrderedTotal = [];
-      for (var i = 0; i < inputElements.length; i++) {
-        inputElements[i].value = '';
-        window.order.removeErrorClass(inputElements[i]);
-      }
-      window.order.buyElement.querySelector('.deliver__textarea').value = '';
-    }
-    switchTabsToDefaultValues(window.order.paymentElement, '.payment__cash-wrap', '.payment__card-wrap');
-    switchTabsToDefaultValues(window.order.deliveryElement, '.deliver__courier', '.deliver__store');
-    revertDeliveryStoreElement(deliverStoreElement);
-    window.form.enableDisableFormInputs(window.order.buyElement, 'none', true);
-    window.order.submitButtonElement.disabled = true;
-  };
+  window.form = {
+    enableDisableFormInputs: enableDisableFormInputs,
 
-  window.form.enableFormElements = function () {
-    window.form.enableDisableFormInputs(window.order.contactDataInputsElement, 'text-input__input', false);
-    window.form.enableDisableFormInputs(window.order.paymentInputsElement, 'text-input__input', false);
-    window.form.enableDisableFormInputs(window.order.buyElement, 'toggle-btn__input', false);
-    window.form.enableDisableFormInputs(deliverStoreElement, 'input-btn__input', false);
-    window.order.submitButtonElement.disabled = false;
+    enableFormElements: function () {
+      enableDisableFormInputs(window.order.contactDataInputsElement, 'text-input__input', false);
+      enableDisableFormInputs(window.order.paymentInputsElement, 'text-input__input', false);
+      enableDisableFormInputs(window.order.buyElement, 'toggle-btn__input', false);
+      enableDisableFormInputs(deliverStoreElement, 'input-btn__input', false);
+      window.order.submitButtonElement.disabled = false;
+    },
+
+    setFormToDefaultValues: function (isInitial) {
+      var inputElements = window.order.formInputElements;
+      if (!isInitial) {
+        // clean the basket
+        removeAllGoodsFromOrder();
+        window.goods.changeGoodCardsElement(window.goods.goodCardsElement);
+        window.goods.goodsOrderedTotal = [];
+        for (var i = 0; i < inputElements.length; i++) {
+          inputElements[i].value = '';
+          window.order.removeErrorClass(inputElements[i]);
+        }
+        window.order.buyElement.querySelector('.deliver__textarea').value = '';
+      }
+      switchTabsToDefaultValues(window.order.paymentElement, '.payment__cash-wrap', '.payment__card-wrap');
+      switchTabsToDefaultValues(window.order.deliveryElement, '.deliver__courier', '.deliver__store');
+      revertDeliveryStoreElement(deliverStoreElement);
+      enableDisableFormInputs(window.order.buyElement, 'none', true);
+      window.order.submitButtonElement.disabled = true;
+    }
   };
 })();
