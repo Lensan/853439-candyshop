@@ -1,14 +1,23 @@
 'use strict';
 
 (function () {
+  var PATH_TO_PIC = 'img/cards/';
+  var GOOD_IN_STOCK_AMOUNT = 5;
+  var GOOD_LITTLE_AMOUNT = 1;
+  var GOOD_NONE_AMOUNT = 0;
+
+  var CARD_IN_STOCK_CLASS = 'card--in-stock';
+  var CARD_LITTLE_CLASS = 'card--little';
+  var CARD_SOON_CLASS = 'card--soon';
+
   var getCardClass = function (goodAmount) {
     var cardClass = '';
-    if (goodAmount > window.data.GOOD_IN_STOCK_AMOUNT) {
-      cardClass = window.data.CARD_IN_STOCK_CLASS;
-    } else if (goodAmount >= window.data.GOOD_LITTLE_AMOUNT && goodAmount <= window.data.GOOD_IN_STOCK_AMOUNT) {
-      cardClass = window.data.CARD_LITTLE_CLASS;
-    } else if (goodAmount === window.data.GOOD_NONE_AMOUNT) {
-      cardClass = window.data.CARD_SOON_CLASS;
+    if (goodAmount > GOOD_IN_STOCK_AMOUNT) {
+      cardClass = CARD_IN_STOCK_CLASS;
+    } else if (goodAmount >= GOOD_LITTLE_AMOUNT && goodAmount <= GOOD_IN_STOCK_AMOUNT) {
+      cardClass = CARD_LITTLE_CLASS;
+    } else if (goodAmount === GOOD_NONE_AMOUNT) {
+      cardClass = CARD_SOON_CLASS;
     }
     return cardClass;
   };
@@ -52,40 +61,30 @@
     return card;
   };
 
-  var renderCatalogCardsTotal = function (goodAmount, goodNames, goodPictures, goodContents, cardsElement) {
+  var renderCatalogCardsTotal = function (goodData, cardsElement) {
     var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
-    var goodData = window.data.generateGoodsData(goodAmount, goodNames, goodPictures, goodContents);
     var fragment = document.createDocumentFragment();
     for (var i = 0; i < goodData.length; i++) {
       var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
       fragment.appendChild(cardElement);
     }
     cardsElement.appendChild(fragment);
-    return goodData;
   };
 
   var catalogCardsWrapElement = document.querySelector('.catalog__cards-wrap');
   var catalogCardsElement = catalogCardsWrapElement.querySelector('.catalog__cards');
 
-  window.catalog = {
-    getParentElement: function (evt, className) {
-      var element = evt.target;
-      var isElementFound = false;
-      while (!isElementFound && element.parentNode.nodeName !== '#document') {
-        element = element.parentNode;
-        if (element.classList.contains(className)) {
-          isElementFound = true;
-        }
+  var getParentElement = function (evt, className) {
+    var element = evt.target;
+    var isElementFound = false;
+    while (!isElementFound && element.parentNode.nodeName !== '#document') {
+      element = element.parentNode;
+      if (element.classList.contains(className)) {
+        isElementFound = true;
       }
-      return element;
     }
+    return element;
   };
-  document.addEventListener('DOMContentLoaded', function () {
-    catalogCardsElement.classList.remove('catalog__cards--load');
-    catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
-    window.catalog.goodsDataTotal = renderCatalogCardsTotal(window.data.GOODS_AMOUNT_TOTAL, window.data.GOOD_NAMES, window.data.GOOD_PICTURES, window.data.GOOD_CONTENTS, catalogCardsElement);
-    catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
-  });
 
   var addRemoveCardComposition = function (element) {
     element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
@@ -98,7 +97,7 @@
 
   var onCatalogCardElementClick = function (evt) {
     var targetElement = evt.target;
-    var cardElement = window.catalog.getParentElement(evt, 'catalog__card');
+    var cardElement = getParentElement(evt, 'catalog__card');
     if (targetElement.classList.contains('card__btn-composition')) {
       addRemoveCardComposition(cardElement);
     } else if (targetElement.classList.contains('card__btn-favorite')) {
@@ -108,5 +107,30 @@
       evt.preventDefault();
       window.goods.createAndRenderOrderCard(evt);
     }
+  };
+
+  var updateGoodData = function (data) {
+    data.forEach(function (good) {
+      good.picture = PATH_TO_PIC + good.picture;
+    });
+    return data;
+  };
+
+  var onSuccessLoad = function (goodDataLoaded) {
+    var goodsData = updateGoodData(goodDataLoaded);
+    catalogCardsElement.classList.remove('catalog__cards--load');
+    catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
+    renderCatalogCardsTotal(goodsData, catalogCardsElement);
+    catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
+    window.form.setFormToDefaultValues(true);
+    window.catalog.goodsDataTotal = goodsData;
+  };
+
+  window.backend.load(onSuccessLoad, window.modal.onErrorLoad);
+
+  window.catalog = {
+    goodsDataTotal: [],
+    CARD_SOON_CLASS: CARD_SOON_CLASS,
+    getParentElement: getParentElement
   };
 })();

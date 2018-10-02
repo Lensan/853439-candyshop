@@ -1,6 +1,9 @@
 'use strict';
 
 (function () {
+  var GOOD_MIN_PRICE = 100;
+  var GOOD_MAX_PRICE = 1500;
+
   var onLeftRangeButtonDown = function (evt) {
     var startCoordsX = evt.clientX;
     var dragged = false;
@@ -15,7 +18,7 @@
           rangeFillLineElement.style.left = leftButtonShift.toString() + 'px';
           rangeButtonLeftElement.style.left = leftButtonShift.toString() + 'px';
           var priceDiff = Math.round((priceRange * rangeFilterWidth / (rangeFilterWidth - rangeButtonLeftElement.offsetWidth)) - priceRange);
-          rangePriceMinElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonLeftElement.offsetLeft / rangeFilterWidth) + window.data.GOOD_MIN_PRICE)).toString();
+          rangePriceMinElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonLeftElement.offsetLeft / rangeFilterWidth) + GOOD_MIN_PRICE)).toString();
         }
       }
     };
@@ -23,7 +26,7 @@
       upEvt.preventDefault();
       if (!dragged) {
         var priceDiff = Math.round((priceRange * rangeFilterWidth / (rangeFilterWidth - rangeButtonLeftElement.offsetWidth)) - priceRange);
-        rangePriceMinElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonLeftElement.offsetLeft / rangeFilterWidth) + window.data.GOOD_MIN_PRICE)).toString();
+        rangePriceMinElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonLeftElement.offsetLeft / rangeFilterWidth) + GOOD_MIN_PRICE)).toString();
       }
       document.removeEventListener('mousemove', onRangeMouseMove);
       document.removeEventListener('mouseup', onRangeMouseUp);
@@ -46,7 +49,7 @@
           rangeFillLineElement.style.right = (rangeFilterWidth - rightButtonShift).toString() + 'px';
           rangeButtonRightElement.style.left = rightButtonShift.toString() + 'px';
           var priceDiff = Math.round((priceRange * rangeFilterWidth / (rangeFilterWidth - rangeButtonRightElement.offsetWidth)) - priceRange);
-          rangePriceMaxElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonRightElement.offsetLeft / rangeFilterWidth) + window.data.GOOD_MIN_PRICE)).toString();
+          rangePriceMaxElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonRightElement.offsetLeft / rangeFilterWidth) + GOOD_MIN_PRICE)).toString();
         }
       }
     };
@@ -54,7 +57,7 @@
       upEvt.preventDefault();
       if (!dragged) {
         var priceDiff = Math.round((priceRange * rangeFilterWidth / (rangeFilterWidth - rangeButtonRightElement.offsetWidth)) - priceRange);
-        rangePriceMaxElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonRightElement.offsetLeft / rangeFilterWidth) + window.data.GOOD_MIN_PRICE)).toString();
+        rangePriceMaxElement.textContent = (Math.round(((priceRange + priceDiff) * rangeButtonRightElement.offsetLeft / rangeFilterWidth) + GOOD_MIN_PRICE)).toString();
       }
       document.removeEventListener('mousemove', onRangeMouseMove);
       document.removeEventListener('mouseup', onRangeMouseUp);
@@ -72,11 +75,11 @@
   var rangeButtonLeftElement = rangeFilterElement.querySelector('.range__btn--left');
   var rangeButtonRightElement = rangeFilterElement.querySelector('.range__btn--right');
   var rangeFillLineElement = rangeFilterElement.querySelector('.range__fill-line');
-  var priceRange = window.data.GOOD_MAX_PRICE - window.data.GOOD_MIN_PRICE;
+  var priceRange = GOOD_MAX_PRICE - GOOD_MIN_PRICE;
 
   // set initial price values from initial conditions
-  rangeFilterElement.querySelector('.range__price--min').textContent = window.data.GOOD_MIN_PRICE;
-  rangeFilterElement.querySelector('.range__price--max').textContent = window.data.GOOD_MAX_PRICE;
+  rangeFilterElement.querySelector('.range__price--min').textContent = GOOD_MIN_PRICE.toString();
+  rangeFilterElement.querySelector('.range__price--max').textContent = GOOD_MAX_PRICE.toString();
 
   rangeButtonLeftElement.addEventListener('mousedown', onLeftRangeButtonDown);
   rangeButtonRightElement.addEventListener('mousedown', onRightRangeButtonDown);
