@@ -73,6 +73,7 @@
     if (!isCardNumberValid) {
       element.setCustomValidity('Невалидный номер банковской карты!');
       addErrorClass(element);
+      buyElement.reportValidity();
     }
     return isCardNumberValid;
   };
@@ -97,7 +98,7 @@
   var onContactDataInputFieldsBlur = function (evt) {
     var targetElement = evt.target;
     if (!targetElement.validity.valid) {
-      document.querySelector('#buy-form').reportValidity();
+      buyElement.reportValidity();
     }
     checkElementValidity(targetElement);
   };

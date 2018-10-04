@@ -236,6 +236,8 @@
     changeMainBasketHeader: changeMainBasketHeader,
     changeGoodCardsElement: changeGoodCardsElement,
     createAndRenderOrderCard: createAndRenderOrderCard,
-    checkOrderDataIsEmpty: checkOrderDataIsEmpty
+    checkOrderDataIsEmpty: checkOrderDataIsEmpty,
+    getRegexpValue: getRegexpValue,
+    getGoodFromInitialData: getGoodFromInitialData
   };
 })();

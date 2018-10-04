@@ -90,9 +90,21 @@
     element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
   };
 
-  var addRemoveCardFavorite = function (evt) {
+  var addRemoveCardFavorite = function (evt, element) {
     evt.target.classList.toggle('card__btn-favorite--selected');
     evt.target.blur();
+    var goodsFavorite = window.catalog.goodsFavoriteData;
+    var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent);
+    var cardIndex = goodsFavorite.map(function (good) {
+      return good.name;
+    }).indexOf(cardData.name);
+    if (cardIndex === -1) {
+      goodsFavorite.push(cardData);
+    } else {
+      goodsFavorite.splice(cardIndex, 1);
+    }
+    window.filter.getInputButtonItemCountElement(window.filter.catalogFilterFavoriteElement).textContent = '(' + goodsFavorite.length + ')';
+    window.catalog.goodsFavoriteData = goodsFavorite;
   };
 
   var onCatalogCardElementClick = function (evt) {
@@ -102,7 +114,7 @@
       addRemoveCardComposition(cardElement);
     } else if (targetElement.classList.contains('card__btn-favorite')) {
       evt.preventDefault();
-      addRemoveCardFavorite(evt);
+      addRemoveCardFavorite(evt, cardElement);
     } else if (targetElement.classList.contains('card__btn')) {
       evt.preventDefault();
       window.goods.createAndRenderOrderCard(evt);
@@ -123,14 +135,18 @@
     renderCatalogCardsTotal(goodsData, catalogCardsElement);
     catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
     window.form.setFormToDefaultValues(true);
+    window.filter.setFiltersInitialData(goodsData);
     window.catalog.goodsDataTotal = goodsData;
   };
 
   window.backend.load(onSuccessLoad, window.modal.onErrorLoad);
 
   window.catalog = {
+    goodsFavoriteData: [],
     goodsDataTotal: [],
     CARD_SOON_CLASS: CARD_SOON_CLASS,
-    getParentElement: getParentElement
+    catalogCardsElement: catalogCardsElement,
+    getParentElement: getParentElement,
+    renderCatalogCardsTotal: renderCatalogCardsTotal
   };
 })();
