@@ -38,11 +38,9 @@
   var setGoodPriceRangeData = function (data) {
     var prices = data.map(function (good) {
       return good.price;
-    }).sort(function (num1, num2) {
-      return num1 - num2;
     });
-    var goodMinPrice = prices.shift();
-    var goodMaxPrice = prices.pop();
+    var goodMinPrice = Math.min.apply(Math, prices);
+    var goodMaxPrice = Math.max.apply(Math, prices);
     var priceRange = goodMaxPrice - goodMinPrice;
     rangePriceMinElement.textContent = goodMinPrice.toString();
     rangePriceMaxElement.textContent = goodMaxPrice.toString();
