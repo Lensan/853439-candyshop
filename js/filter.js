@@ -121,7 +121,10 @@
       document.removeEventListener('mouseup', onRangeMouseUp);
       var currentlyFilteredData = changeFilteredDataWithNewPrice(window.filter.dataFilteredArray, true);
       uncheckFilterInputs(catalogFilterMarkInputs);
-      renderNewCatalogCards(currentlyFilteredData);
+      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
+      var dataSorted = window.sort.sortCatalogData(currentlyFilteredData, sortItemChecked);
+      renderNewCatalogCards(dataSorted);
+      window.catalog.goodsDataToSort = currentlyFilteredData;
     };
     document.addEventListener('mousemove', onRangeMouseMove);
     document.addEventListener('mouseup', onRangeMouseUp);
@@ -157,7 +160,10 @@
       document.removeEventListener('mouseup', onRangeMouseUp);
       var currentlyFilteredData = changeFilteredDataWithNewPrice(window.filter.dataFilteredArray, true);
       uncheckFilterInputs(catalogFilterMarkInputs);
-      renderNewCatalogCards(currentlyFilteredData);
+      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
+      var dataSorted = window.sort.sortCatalogData(currentlyFilteredData, sortItemChecked);
+      renderNewCatalogCards(dataSorted);
+      window.catalog.goodsDataToSort = currentlyFilteredData;
     };
     document.addEventListener('mousemove', onRangeMouseMove);
     document.addEventListener('mouseup', onRangeMouseUp);
@@ -280,7 +286,10 @@
       var goodsFiltered = filterGoodsData(targetValue, targetChecked);
       goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
       uncheckFilterInputs(catalogFilterMarkInputs);
-      renderNewCatalogCards(goodsFiltered);
+      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
+      var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
+      renderNewCatalogCards(dataSorted);
+      window.catalog.goodsDataToSort = goodsFiltered;
     }
   };
 
@@ -291,17 +300,24 @@
       var goodsFiltered = filterGoodsData(targetValue, targetChecked);
       goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
       uncheckFilterInputs(catalogFilterMarkInputs);
-      renderNewCatalogCards(goodsFiltered);
+      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
+      var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
+      renderNewCatalogCards(dataSorted);
+      window.catalog.goodsDataToSort = goodsFiltered;
     }
   };
 
   var uncheckFilterInputs = function (inputs) {
     if (inputs.length) {
       for (var i = 0; i < inputs.length; i++) {
-        inputs[i].checked = false;
+        if (inputs[i].checked) {
+          inputs[i].checked = false;
+        }
       }
     } else {
-      inputs.checked = false;
+      if (inputs.checked) {
+        inputs.checked = false;
+      }
     }
   };
 
@@ -333,6 +349,7 @@
       }
     }
     revertPriceFilters();
+    window.sort.catalogFilterSortElement.querySelector('input:first-of-type').checked = true;
     window.filter.dataFilteredArray = [];
     window.filter.goodsFilteredDataTotal = goodsFilteredData;
   };
@@ -341,6 +358,7 @@
     evt.preventDefault();
     revertFiltersToDefaultValues();
     renderNewCatalogCards(window.catalog.goodsDataTotal);
+    window.catalog.goodsDataToSort = window.catalog.goodsDataTotal;
   };
 
   var onCatalogFilterFavoriteElementClick = function (evt) {
@@ -351,6 +369,7 @@
       } else {
         renderNewCatalogCards(window.catalog.goodsDataTotal);
       }
+      window.catalog.goodsDataToSort = window.catalog.goodsDataTotal;
     }
   };
 
@@ -363,6 +382,7 @@
       } else {
         renderNewCatalogCards(window.catalog.goodsDataTotal);
       }
+      window.catalog.goodsDataToSort = window.catalog.goodsDataTotal;
     }
   };
 
@@ -388,7 +408,11 @@
     goodsFilteredDataTotal: [],
     dataFilteredArray: [],
     catalogFilterFavoriteElement: catalogFilterFavoriteElement,
+    catalogFilterMarkInputs: catalogFilterMarkInputs,
+    catalogSideBarElement: catalogSideBarElement,
+    renderNewCatalogCards: renderNewCatalogCards,
     setFiltersInitialData: setFiltersInitialData,
-    getInputButtonItemCountElement: getInputButtonItemCountElement
+    getInputButtonItemCountElement: getInputButtonItemCountElement,
+    uncheckFilterInputs: uncheckFilterInputs
   };
 })();

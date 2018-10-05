@@ -58,6 +58,9 @@
     card.querySelector('.star__count').textContent = '(' + good.rating.number + ')';
     card.querySelector('.card__characteristic').textContent = (good.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + good.nutritionFacts.energy + ' ккал';
     card.querySelector('.card__composition-list').textContent = good.nutritionFacts.contents + '.';
+    if (good.favorite) {
+      card.querySelector('.card__btn-favorite').classList.add('card__btn-favorite--selected');
+    }
     return card;
   };
 
@@ -94,14 +97,19 @@
     evt.target.classList.toggle('card__btn-favorite--selected');
     evt.target.blur();
     var goodsFavorite = window.catalog.goodsFavoriteData;
-    var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent);
+    var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent, false);
     var cardIndex = goodsFavorite.map(function (good) {
       return good.name;
     }).indexOf(cardData.name);
     if (cardIndex === -1) {
+      cardData.favorite = true;
       goodsFavorite.push(cardData);
     } else {
+      cardData.favorite = false;
       goodsFavorite.splice(cardIndex, 1);
+      if (window.filter.catalogFilterFavoriteElement.checked) {
+        window.filter.renderNewCatalogCards(goodsFavorite);
+      }
     }
     window.filter.getInputButtonItemCountElement(window.filter.catalogFilterFavoriteElement).textContent = '(' + goodsFavorite.length + ')';
     window.catalog.goodsFavoriteData = goodsFavorite;
@@ -124,6 +132,7 @@
   var updateGoodData = function (data) {
     data.forEach(function (good) {
       good.picture = PATH_TO_PIC + good.picture;
+      good.favorite = false;
     });
     return data;
   };
@@ -137,6 +146,7 @@
     window.form.setFormToDefaultValues(true);
     window.filter.setFiltersInitialData(goodsData);
     window.catalog.goodsDataTotal = goodsData;
+    window.catalog.goodsDataToSort = goodsData;
   };
 
   window.backend.load(onSuccessLoad, window.modal.onErrorLoad);
@@ -144,6 +154,7 @@
   window.catalog = {
     goodsFavoriteData: [],
     goodsDataTotal: [],
+    goodsDataToSort: [],
     CARD_SOON_CLASS: CARD_SOON_CLASS,
     catalogCardsElement: catalogCardsElement,
     getParentElement: getParentElement,

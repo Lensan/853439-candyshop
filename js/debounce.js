@@ -11,9 +11,10 @@
       if (lastTimeout) {
         window.clearTimeout(lastTimeout);
       }
-      lastTimeout = window.setTimeout(function () {
+      var functionToApply = function () {
         fun.apply(null, args);
-      }, DEBOUNCE_INTERVAL);
+      };
+      lastTimeout = window.setTimeout(functionToApply, DEBOUNCE_INTERVAL);
     };
   };
 })();

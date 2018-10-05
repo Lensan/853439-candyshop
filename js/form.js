@@ -62,6 +62,7 @@
       switchTabsToDefaultValues(window.order.deliveryElement, '.deliver__courier', '.deliver__store');
       revertDeliveryStoreElement(deliverStoreElement);
       enableDisableFormInputs(window.order.buyElement, 'none', true);
+      window.order.buyElement.querySelector('.payment__card-status').textContent = '';
       window.order.submitButtonElement.disabled = true;
     }
   };

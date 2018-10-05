@@ -2,6 +2,8 @@
 
 (function () {
   var PATH_TO_MAP = 'img/map/';
+  var CARD_ACCEPTED_STATUS = 'Одобрен';
+  var CARD_DEFAULT_STATUS = 'Не определён';
   var AddressMap = {
     'academicheskaya': 'проспект Науки, д. 19, корп. 3, литер А, ТК «Платформа», 3-й этаж, секция 310',
     'vasileostrovskaya': 'Средний проспект В.О., д. 27',
@@ -110,8 +112,16 @@
     }
     var isElementValid = checkElementValidity(targetElement);
     if (targetElement.id === 'payment__card-number' && isElementValid) {
-      checkBankCardValidity(targetElement);
+      isElementValid = checkBankCardValidity(targetElement);
     }
+    var arePaymentInputsSet = true;
+    var paymentInputs = paymentInputsElement.querySelectorAll('input');
+    for (var i = 0; i < paymentInputs.length; i++) {
+      if (!paymentInputs[i].value) {
+        arePaymentInputsSet = false;
+      }
+    }
+    buyElement.querySelector('.payment__card-status').textContent = (isElementValid && arePaymentInputsSet) ? CARD_ACCEPTED_STATUS : CARD_DEFAULT_STATUS;
   };
 
   var onDeliveryInputFieldsBlur = function (evt) {

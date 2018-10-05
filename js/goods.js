@@ -1,12 +1,12 @@
 'use strict';
 
 (function () {
-  var getGoodFromInitialData = function (name) {
+  var getGoodFromInitialData = function (name, newObjRequired) {
     var goodData = {};
     var goodInitialData = window.catalog.goodsDataTotal;
     for (var i = 0; i < goodInitialData.length; i++) {
       if (name === goodInitialData[i].name) {
-        goodData = Object.assign(goodData, goodInitialData[i]);
+        goodData = newObjRequired ? Object.assign(goodData, goodInitialData[i]) : goodInitialData[i];
       }
     }
     return goodData;
@@ -16,7 +16,7 @@
     var cardElement = window.catalog.getParentElement(evt, 'catalog__card');
     var cardData = {};
     if (!cardElement.classList.contains(window.catalog.CARD_SOON_CLASS)) {
-      cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent);
+      cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent, true);
     }
     return cardData;
   };
