@@ -29,9 +29,11 @@
   };
 
   var onCatalogFilterSortElementClick = function (evt) {
-    var catalogCardsSorted = sortCatalogData(window.window.catalog.goodsDataToSort, evt.target.value);
-    window.filter.uncheckFilterInputs(window.filter.catalogFilterMarkInputs);
-    window.filter.renderNewCatalogCards(catalogCardsSorted);
+    if (evt.target.value) {
+      var catalogCardsSorted = sortCatalogData(window.window.catalog.goodsDataToSort, evt.target.value);
+      window.filter.uncheckFilterInputs(window.filter.catalogFilterMarkInputs);
+      window.filter.renderNewCatalogCards(catalogCardsSorted);
+    }
   };
 
   var catalogFilterSortElement = window.filter.catalogSideBarElement.querySelector('ul.catalog__filter:last-of-type');

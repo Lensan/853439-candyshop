@@ -98,9 +98,7 @@
     evt.target.blur();
     var goodsFavorite = window.catalog.goodsFavoriteData;
     var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent, false);
-    var cardIndex = goodsFavorite.map(function (good) {
-      return good.name;
-    }).indexOf(cardData.name);
+    var cardIndex = goodsFavorite.indexOf(cardData);
     if (cardIndex === -1) {
       cardData.favorite = true;
       goodsFavorite.push(cardData);
@@ -131,6 +129,7 @@
 
   var updateGoodData = function (data) {
     data.forEach(function (good) {
+      good.id = window.goods.getRegexpValue(good.picture, '.+(?=\\.)');
       good.picture = PATH_TO_PIC + good.picture;
       good.favorite = false;
     });

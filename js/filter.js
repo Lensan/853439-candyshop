@@ -1,14 +1,14 @@
 'use strict';
 
 (function () {
-
   var catalogSideBarElement = document.querySelector('.catalog__sidebar');
   var catalogFilterInputElements = catalogSideBarElement.querySelectorAll('.input-btn__input');
 
-  var getFilteredData = function (data, param, value, name) {
+  var getFilteredData = function (data, param, value, type, name) {
     var dataFiltered = {};
     dataFiltered.name = name;
     dataFiltered.check = false;
+    dataFiltered.type = type;
     dataFiltered.data = data.filter(function (it) {
       var result;
       if (param === 'kind') {
@@ -65,7 +65,7 @@
           goodType = window.goods.getRegexpValue(filterItemValue, '^\\w+');
           goodValue = (filterItemValue === 'vegetarian');
         }
-        var dataFiltered = getFilteredData(goodsData, goodType, goodValue, filterItemValue);
+        var dataFiltered = getFilteredData(goodsData, goodType, goodValue, filterItemName, filterItemValue);
         getInputButtonItemCountElement(catalogFilterInputElements[i]).textContent = '(' + dataFiltered.data.length + ')';
         goodsFilteredDataTotal.push(dataFiltered);
       } else if (filterItemName === 'mark') {
@@ -203,11 +203,18 @@
   };
 
   var filterMultipleItems = function (data) {
+    var dataTypeFiltered = [];
+    data.filter(function (it) {
+      return it.type === 'food-type';
+    }).forEach(function (it) {
+      dataTypeFiltered = dataTypeFiltered.concat(it.data);
+    });
+
     var dataFiltered = [];
     for (var i = 0; i < data.length; i++) {
       if (!i) {
-        dataFiltered = data[i].data;
-      } else {
+        dataFiltered = data[i].type === 'food-type' ? dataTypeFiltered : data[i].data;
+      } else if (data[i].type !== 'food-type') {
         dataFiltered = dataFiltered.filter(function (data1) {
           return data[i].data.includes(data1);
         });
@@ -253,7 +260,7 @@
   });
 
   var filterGoodsData = function (filterName, filterChecked) {
-    var goodsCurrentlyFiltered = window.filter.dataFilteredArray;
+    var goodsCurrentlyFiltered = [];
     var goodsFilteredData = window.filter.goodsFilteredDataTotal;
     var filtersCheckedItems = [];
     if (filterChecked) {
@@ -277,31 +284,25 @@
   var catalogFilterMarkElements = catalogSideBarElement.querySelector('.catalog__filter:nth-of-type(3)');
   var catalogFilterMarkInputs = catalogFilterMarkElements.querySelectorAll('input');
 
+  var filterGoodsCommon = function (evt) {
+    var goodsFiltered = filterGoodsData(evt.target.value, evt.target.checked);
+    goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
+    uncheckFilterInputs(catalogFilterMarkInputs);
+    var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
+    var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
+    renderNewCatalogCards(dataSorted);
+    window.catalog.goodsDataToSort = goodsFiltered;
+  };
+
   var onFoodTypeElementClick = function (evt) {
-    var targetValue = evt.target.value;
-    var targetChecked = evt.target.checked;
-    if (targetValue) {
-      var goodsFiltered = filterGoodsData(targetValue, targetChecked);
-      goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
-      uncheckFilterInputs(catalogFilterMarkInputs);
-      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
-      var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
-      renderNewCatalogCards(dataSorted);
-      window.catalog.goodsDataToSort = goodsFiltered;
+    if (evt.target.value) {
+      filterGoodsCommon(evt);
     }
   };
 
   var onFoodPropertyElementClick = function (evt) {
-    var targetValue = evt.target.value;
-    var targetChecked = evt.target.checked;
-    if (targetValue) {
-      var goodsFiltered = filterGoodsData(targetValue, targetChecked);
-      goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
-      uncheckFilterInputs(catalogFilterMarkInputs);
-      var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
-      var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
-      renderNewCatalogCards(dataSorted);
-      window.catalog.goodsDataToSort = goodsFiltered;
+    if (evt.target.value) {
+      filterGoodsCommon(evt);
     }
   };
 
@@ -411,6 +412,6 @@
     renderNewCatalogCards: renderNewCatalogCards,
     setFiltersInitialData: setFiltersInitialData,
     getInputButtonItemCountElement: getInputButtonItemCountElement,
-    uncheckFilterInputs: uncheckFilterInputs
+    uncheckFilterInputs: uncheckFilterInputs,
   };
 })();

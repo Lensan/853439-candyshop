@@ -45,6 +45,12 @@
       if (window.goods.checkOrderDataIsEmpty(window.goods.goodCardsElement)) {
         window.form.setFormToDefaultValues(true);
       }
+      if (!window.catalog.catalogCardsElement.querySelector('.catalog__card')) {
+        window.form.enableDisableFormInputs(window.filter.catalogSideBarElement, 'none', true);
+        window.filter.catalogSideBarElement.querySelectorAll('button').forEach(function (button) {
+          button.disabled = true;
+        });
+      }
     }
   };
 })();
