@@ -1,12 +1,12 @@
 'use strict';
 
 (function () {
-  var getGoodFromInitialData = function (name) {
+  var getGoodFromInitialData = function (name, newObjRequired) {
     var goodData = {};
     var goodInitialData = window.catalog.goodsDataTotal;
     for (var i = 0; i < goodInitialData.length; i++) {
       if (name === goodInitialData[i].name) {
-        goodData = Object.assign(goodData, goodInitialData[i]);
+        goodData = newObjRequired ? Object.assign(goodData, goodInitialData[i]) : goodInitialData[i];
       }
     }
     return goodData;
@@ -16,7 +16,7 @@
     var cardElement = window.catalog.getParentElement(evt, 'catalog__card');
     var cardData = {};
     if (!cardElement.classList.contains(window.catalog.CARD_SOON_CLASS)) {
-      cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent);
+      cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent, true);
     }
     return cardData;
   };
@@ -72,17 +72,17 @@
         var orderCardElement = renderOrderCard(goodOrderedData);
 
         var orderCloseButton = orderCardElement.querySelector('.card-order__close');
-        orderCloseButton.addEventListener('click', onOrderCloseButtonClickOrPress);
+        orderCloseButton.addEventListener('click', onOrderCloseButtonClick);
 
         var orderDecreaseButton = orderCardElement.querySelector('.card-order__btn--decrease');
-        orderDecreaseButton.addEventListener('click', onOrderCountButtonsClickOrPress);
+        orderDecreaseButton.addEventListener('click', onOrderCountButtonsClick);
 
         var orderIncreaseButton = orderCardElement.querySelector('.card-order__btn--increase');
-        orderIncreaseButton.addEventListener('click', onOrderCountButtonsClickOrPress);
+        orderIncreaseButton.addEventListener('click', onOrderCountButtonsClick);
 
         var orderCountButton = orderCardElement.querySelector('.card-order__count');
-        orderCountButton.addEventListener('click', onOrderCountButtonsClickOrPress);
-        orderCountButton.addEventListener('keyup', onOrderCountButtonsClickOrPress);
+        orderCountButton.addEventListener('click', onOrderCountButtonsClick);
+        orderCountButton.addEventListener('keyup', onOrderCountButtonsClick);
       } else {
         increaseGoodOrderedCount(goodOrderedData);
       }
@@ -143,14 +143,14 @@
     }
   };
 
-  var onOrderCloseButtonClickOrPress = function (evt) {
+  var onOrderCloseButtonClick = function (evt) {
     evt.preventDefault();
     removeGoodFromOrder(evt);
     var goodsOrderedData = checkOrderCardsData(goodCardsElement);
     changeMainBasketHeader(goodsOrderedData);
   };
 
-  var onOrderCountButtonsClickOrPress = function (evt) {
+  var onOrderCountButtonsClick = function (evt) {
     evt.preventDefault();
     increaseDecreaseCheckOrderCount(evt);
     var goodsOrderedData = checkOrderCardsData(goodCardsElement);
@@ -175,11 +175,9 @@
     cardImageElement.alt = order.name;
     card.querySelector('.card-order__price').textContent = order.price;
     var cardCountElement = card.querySelector('.card-order__count');
-    var goodId = getRegexpValue(order.picture, '.+(?=\\.)');
-    goodId = getRegexpValue(goodId, '(?<=\\/)\\w+.\\w+$');
-    cardCountElement.name = goodId;
+    cardCountElement.name = order.id;
     cardCountElement.value = 1;
-    cardCountElement.id = 'card-order__' + goodId;
+    cardCountElement.id = 'card-order__' + order.id;
     return card;
   };
 
@@ -236,6 +234,8 @@
     changeMainBasketHeader: changeMainBasketHeader,
     changeGoodCardsElement: changeGoodCardsElement,
     createAndRenderOrderCard: createAndRenderOrderCard,
-    checkOrderDataIsEmpty: checkOrderDataIsEmpty
+    checkOrderDataIsEmpty: checkOrderDataIsEmpty,
+    getRegexpValue: getRegexpValue,
+    getGoodFromInitialData: getGoodFromInitialData
   };
 })();

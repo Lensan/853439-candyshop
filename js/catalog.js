@@ -58,6 +58,9 @@
     card.querySelector('.star__count').textContent = '(' + good.rating.number + ')';
     card.querySelector('.card__characteristic').textContent = (good.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + good.nutritionFacts.energy + ' ккал';
     card.querySelector('.card__composition-list').textContent = good.nutritionFacts.contents + '.';
+    if (good.favorite) {
+      card.querySelector('.card__btn-favorite').classList.add('card__btn-favorite--selected');
+    }
     return card;
   };
 
@@ -90,9 +93,24 @@
     element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
   };
 
-  var addRemoveCardFavorite = function (evt) {
+  var addRemoveCardFavorite = function (evt, element) {
     evt.target.classList.toggle('card__btn-favorite--selected');
     evt.target.blur();
+    var goodsFavorite = window.catalog.goodsFavoriteData;
+    var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent, false);
+    var cardIndex = goodsFavorite.indexOf(cardData);
+    if (cardIndex === -1) {
+      cardData.favorite = true;
+      goodsFavorite.push(cardData);
+    } else {
+      cardData.favorite = false;
+      goodsFavorite.splice(cardIndex, 1);
+      if (window.filter.catalogFilterFavoriteElement.checked) {
+        window.filter.renderNewCatalogCards(goodsFavorite);
+      }
+    }
+    window.filter.getInputButtonItemCountElement(window.filter.catalogFilterFavoriteElement).textContent = '(' + goodsFavorite.length + ')';
+    window.catalog.goodsFavoriteData = goodsFavorite;
   };
 
   var onCatalogCardElementClick = function (evt) {
@@ -102,7 +120,7 @@
       addRemoveCardComposition(cardElement);
     } else if (targetElement.classList.contains('card__btn-favorite')) {
       evt.preventDefault();
-      addRemoveCardFavorite(evt);
+      addRemoveCardFavorite(evt, cardElement);
     } else if (targetElement.classList.contains('card__btn')) {
       evt.preventDefault();
       window.goods.createAndRenderOrderCard(evt);
@@ -111,7 +129,9 @@
 
   var updateGoodData = function (data) {
     data.forEach(function (good) {
+      good.id = window.goods.getRegexpValue(good.picture, '.+(?=\\.)');
       good.picture = PATH_TO_PIC + good.picture;
+      good.favorite = false;
     });
     return data;
   };
@@ -123,14 +143,20 @@
     renderCatalogCardsTotal(goodsData, catalogCardsElement);
     catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
     window.form.setFormToDefaultValues(true);
+    window.filter.setFiltersInitialData(goodsData);
     window.catalog.goodsDataTotal = goodsData;
+    window.catalog.goodsDataToSort = goodsData;
   };
 
   window.backend.load(onSuccessLoad, window.modal.onErrorLoad);
 
   window.catalog = {
+    goodsFavoriteData: [],
     goodsDataTotal: [],
+    goodsDataToSort: [],
     CARD_SOON_CLASS: CARD_SOON_CLASS,
-    getParentElement: getParentElement
+    catalogCardsElement: catalogCardsElement,
+    getParentElement: getParentElement,
+    renderCatalogCardsTotal: renderCatalogCardsTotal
   };
 })();

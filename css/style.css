@@ -185,20 +185,6 @@ body {
   font-size: 16px;
   transition: color 0.2s ease;
 }
-.text-input--error .text-input__input {
-  border-color: #ff481c;
-  color: #ff481c;
-}
-.text-input--error .text-input__label {
-  color: #ff481c;
-}
-.text-input--correct .text-input__input {
-  border-color: #6e58d9;
-  color: #6e58d9;
-}
-.text-input--correct .text-input__label {
-  color: #6e58d9;
-}
 .text-input--light .text-input__input:focus {
   border-color: #ffffff;
 }
@@ -206,6 +192,30 @@ body {
   color: #ffffff;
   transition: color 0.2s ease;
 }
+.text-input--error .text-input__input {
+  border-color: #ff481c;
+  color: #ff481c;
+}
+.text-input--error .text-input__label {
+  color: #ff481c;
+}
+
+.text-input--error .text-input__input:focus {
+  border-color: #ff481c;
+}
+.text-input--error .text-input__input:focus + .text-input__label {
+  color: #ff481c;
+  transition: color 0.2s ease;
+}
+
+.text-input--correct .text-input__input {
+  border-color: #6e58d9;
+  color: #6e58d9;
+}
+.text-input--correct .text-input__label {
+  color: #6e58d9;
+}
+
 .text-input__label--lock::before {
   content: '';
   display: none;
