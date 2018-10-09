@@ -1,19 +1,16 @@
 'use strict';
 
 (function () {
-  var getGoodFromInitialData = function (name, newObjRequired) {
-    var goodData = {};
-    var goodInitialData = window.catalog.goodsDataTotal;
-    for (var i = 0; i < goodInitialData.length; i++) {
-      if (name === goodInitialData[i].name) {
-        goodData = newObjRequired ? Object.assign(goodData, goodInitialData[i]) : goodInitialData[i];
-      }
-    }
+  var getGoodFromInitialData = function (goodName, newObjectRequired) {
+    var goodsInitialData = window.catalog.goodsDataTotal;
+    var goodData = goodsInitialData.find(function (good) {
+      return goodName === good.name;
+    });
+    goodData = newObjectRequired ? Object.assign({}, goodData) : goodData;
     return goodData;
   };
 
-  var getCardDataForOrder = function (evt) {
-    var cardElement = window.catalog.getParentElement(evt, 'catalog__card');
+  var getCardDataForOrder = function (cardElement) {
     var cardData = {};
     if (!cardElement.classList.contains(window.catalog.CARD_SOON_CLASS)) {
       cardData = getGoodFromInitialData(cardElement.querySelector('.card__title').textContent, true);
@@ -25,21 +22,19 @@
 
   var increaseGoodOrderedCount = function (goodData) {
     var goodsOrdered = goodCardsElement.querySelectorAll('.card-order');
-    for (var i = 0; i < goodsOrdered.length; i++) {
-      var goodTitle = goodsOrdered[i].querySelector('.card-order__title').textContent;
-      if (goodTitle === goodData.name) {
-        var goodOrderedElement = goodsOrdered[i].querySelector('.card-order__count');
-        if ((parseInt(goodOrderedElement.value, 10) + 1) <= goodData.amount) {
-          goodOrderedElement.value = parseInt(goodOrderedElement.value, 10) + 1;
-        }
-      }
+    var goodOrderedElement = Array.from(goodsOrdered).find(function (good) {
+      return good.querySelector('.card-order__title').textContent === goodData.name;
+    });
+    var goodOrderedCountElement = goodOrderedElement.querySelector('.card-order__count');
+    if ((parseInt(goodOrderedCountElement.value, 10) + 1) <= goodData.amount) {
+      goodOrderedCountElement.value = parseInt(goodOrderedCountElement.value, 10) + 1;
     }
   };
 
-  var changeMainBasketHeader = function (goodsData) {
+  var changeMainBasketHeader = function (goodsStats) {
     var mainBasketHeaderElement = document.querySelector('.main-header__basket');
-    if (goodsData.goodsCountTotal) {
-      mainBasketHeaderElement.textContent = 'В корзине ' + goodsData.goodsCountTotal + ' товаров на сумму ' + goodsData.goodsCostTotal + ' ₽';
+    if (goodsStats.countTotal) {
+      mainBasketHeaderElement.textContent = 'В корзине ' + goodsStats.countTotal + ' товаров на сумму ' + goodsStats.costTotal + ' ₽';
     } else {
       mainBasketHeaderElement.textContent = 'В корзине ничего нет';
     }
@@ -47,25 +42,22 @@
 
   var goodsOrderedTotal = [];
   var checkAddGoodInOrderArray = function (goodData) {
-    var isGoodInOrder = false;
-    for (var i = 0; i < goodsOrderedTotal.length; i++) {
-      if (goodsOrderedTotal[i].name === goodData.name) {
-        isGoodInOrder = true;
-      }
-    }
-    if (!isGoodInOrder) {
+    var isGoodFound = goodsOrderedTotal.some(function (data) {
+      return data.name === goodData.name;
+    });
+    if (!isGoodFound) {
       goodsOrderedTotal.push(goodData);
     }
-    return isGoodInOrder;
+    return isGoodFound;
   };
 
-  var checkObjectIsEmpty = function (obj) {
-    return Object.keys(obj).length === 0;
+  var checkObjectIsEmpty = function (object) {
+    return Object.keys(object).length === 0;
   };
 
-  var createAndRenderOrderCard = function (evt) {
-    goodsOrderedTotal = window.goods.goodsOrderedTotal;
-    var goodOrderedData = getCardDataForOrder(evt);
+  var createAndRenderOrderCard = function (cardElement) {
+    goodsOrderedTotal = window.goods.orderedTotal;
+    var goodOrderedData = getCardDataForOrder(cardElement);
     if (!checkObjectIsEmpty(goodOrderedData)) {
       var isGoodOrdered = checkAddGoodInOrderArray(goodOrderedData);
       if (!isGoodOrdered) {
@@ -75,86 +67,97 @@
         orderCloseButton.addEventListener('click', onOrderCloseButtonClick);
 
         var orderDecreaseButton = orderCardElement.querySelector('.card-order__btn--decrease');
-        orderDecreaseButton.addEventListener('click', onOrderCountButtonsClick);
+        orderDecreaseButton.addEventListener('click', onOrderIncreaseDecreaseCountButtonClick);
 
         var orderIncreaseButton = orderCardElement.querySelector('.card-order__btn--increase');
-        orderIncreaseButton.addEventListener('click', onOrderCountButtonsClick);
+        orderIncreaseButton.addEventListener('click', onOrderIncreaseDecreaseCountButtonClick);
 
         var orderCountButton = orderCardElement.querySelector('.card-order__count');
-        orderCountButton.addEventListener('click', onOrderCountButtonsClick);
-        orderCountButton.addEventListener('keyup', onOrderCountButtonsClick);
+        orderCountButton.addEventListener('click', onOrderIncreaseDecreaseCountButtonClick);
+        orderCountButton.addEventListener('keyup', onOrderCountButtonKeyUp);
       } else {
         increaseGoodOrderedCount(goodOrderedData);
       }
-      var goodsOrderedData = checkOrderCardsData(goodCardsElement);
-      changeMainBasketHeader(goodsOrderedData);
+      var goodsOrderedStats = getOrderCardsStats();
+      changeMainBasketHeader(goodsOrderedStats);
     }
   };
 
   var removeGoodFromTotalArray = function (goodName) {
-    for (var i = 0; i < goodsOrderedTotal.length; i++) {
-      if (goodsOrderedTotal[i].name === goodName) {
-        goodsOrderedTotal.splice(i, 1);
-      }
+    var goodIndex = goodsOrderedTotal.findIndex(function (good) {
+      return good.name === goodName;
+    });
+    if (goodIndex !== -1) {
+      goodsOrderedTotal.splice(goodIndex, 1);
     }
   };
 
-  var removeGoodFromOrder = function (evt) {
-    var cardOrderElement = window.catalog.getParentElement(evt, 'card-order');
-    cardOrderElement.parentNode.removeChild(cardOrderElement);
-    var initialGoodCount = changeGoodCardsElement(goodCardsElement);
-    changeFormElements(goodCardsElement, initialGoodCount);
-    removeGoodFromTotalArray(cardOrderElement.querySelector('.card-order__title').textContent);
+  var removeGoodFromOrder = function (targetElement) {
+    var cardOrderElement = window.catalog.getParentElement(targetElement, 'card-order');
+    if (cardOrderElement) {
+      cardOrderElement.parentNode.removeChild(cardOrderElement);
+      changeGoodCardsElement();
+      changeFormElements(false);
+      removeGoodFromTotalArray(cardOrderElement.querySelector('.card-order__title').textContent);
+    }
   };
 
   var checkOrderCountForIncrease = function (countElement, goodOrderedName) {
-    var isOrderCountToBeIncreased = false;
-    for (var i = 0; i < goodsOrderedTotal.length; i++) {
-      if (goodsOrderedTotal[i].name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= goodsOrderedTotal[i].amount) {
-        isOrderCountToBeIncreased = true;
-      }
-    }
-    return isOrderCountToBeIncreased;
+    return goodsOrderedTotal.some(function (good) {
+      return good.name === goodOrderedName && (parseInt(countElement.value, 10) + 1) <= good.amount;
+    });
   };
 
-  var reduceOrderCountIfIncreased = function (countElement, goodOrderedName) {
-    for (var i = 0; i < goodsOrderedTotal.length; i++) {
-      if (goodsOrderedTotal[i].name === goodOrderedName && parseInt(countElement.value, 10) > goodsOrderedTotal[i].amount) {
-        countElement.value = goodsOrderedTotal[i].amount;
-      }
+  var reduceOrderCountIfExceeded = function (countElement, goodOrderedName) {
+    var goodCountExceeded = goodsOrderedTotal.find(function (good) {
+      return good.name === goodOrderedName && parseInt(countElement.value, 10) > good.amount;
+    });
+    if (goodCountExceeded) {
+      countElement.value = goodCountExceeded.amount;
     }
   };
 
-  var increaseDecreaseCheckOrderCount = function (evt) {
-    var goodsCardElement = window.catalog.getParentElement(evt, 'goods_card');
-    var cardOrderTitle = goodsCardElement.querySelector('.card-order__title').textContent;
-    var cardOrderCountElement = goodsCardElement.querySelector('.card-order__count');
-    if (evt.target.classList.contains('card-order__btn--increase') && checkOrderCountForIncrease(cardOrderCountElement, cardOrderTitle)) {
-      cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) + 1;
-    } else {
-      if (evt.target.classList.contains('card-order__btn--decrease')) {
-        cardOrderCountElement.value = parseInt(cardOrderCountElement.value, 10) - 1;
-      }
-      if (parseInt(cardOrderCountElement.value, 10) <= 0 || !parseInt(cardOrderCountElement.value, 10)) {
-        removeGoodFromOrder(evt);
+  var changeOrderCount = function (targetElement) {
+    var goodsCardElement = window.catalog.getParentElement(targetElement, 'goods_card');
+    if (goodsCardElement) {
+      var cardOrderTitle = goodsCardElement.querySelector('.card-order__title').textContent;
+      var cardOrderCountElement = goodsCardElement.querySelector('.card-order__count');
+      var cardOrderCountElementValue = parseInt(cardOrderCountElement.value, 10);
+      if (targetElement.classList.contains('card-order__btn--increase') && checkOrderCountForIncrease(cardOrderCountElement, cardOrderTitle)) {
+        cardOrderCountElement.value = cardOrderCountElementValue + 1;
       } else {
-        reduceOrderCountIfIncreased(cardOrderCountElement, cardOrderTitle);
+        if (targetElement.classList.contains('card-order__btn--decrease')) {
+          cardOrderCountElement.value = cardOrderCountElementValue - 1;
+        } else if (targetElement.classList.contains('card-order__count') && cardOrderCountElementValue) {
+          reduceOrderCountIfExceeded(cardOrderCountElement, cardOrderTitle);
+        }
+        cardOrderCountElementValue = parseInt(cardOrderCountElement.value, 10);
+        if (cardOrderCountElementValue <= 0 || !cardOrderCountElementValue) {
+          removeGoodFromOrder(targetElement);
+        }
       }
     }
   };
 
   var onOrderCloseButtonClick = function (evt) {
     evt.preventDefault();
-    removeGoodFromOrder(evt);
-    var goodsOrderedData = checkOrderCardsData(goodCardsElement);
-    changeMainBasketHeader(goodsOrderedData);
+    removeGoodFromOrder(evt.target);
+    var goodsOrderedStats = getOrderCardsStats();
+    changeMainBasketHeader(goodsOrderedStats);
   };
 
-  var onOrderCountButtonsClick = function (evt) {
+  var onOrderIncreaseDecreaseCountButtonClick = function (evt) {
     evt.preventDefault();
-    increaseDecreaseCheckOrderCount(evt);
-    var goodsOrderedData = checkOrderCardsData(goodCardsElement);
-    changeMainBasketHeader(goodsOrderedData);
+    changeOrderCount(evt.target);
+    var goodsOrderedStats = getOrderCardsStats();
+    changeMainBasketHeader(goodsOrderedStats);
+  };
+
+  var onOrderCountButtonKeyUp = function (evt) {
+    evt.preventDefault();
+    changeOrderCount(evt.target);
+    var goodsOrderedStats = getOrderCardsStats();
+    changeMainBasketHeader(goodsOrderedStats);
   };
 
   var getRegexpValue = function (value, expression) {
@@ -181,56 +184,57 @@
     return card;
   };
 
-  var checkOrderDataIsEmpty = function (element) {
-    return !element.querySelector('.card-order');
+  var checkOrderDataIsEmpty = function () {
+    return !goodCardsElement.querySelector('.card-order');
   };
 
-  var checkOrderCardsData = function (element) {
-    var goodsOrderedData = {};
-    goodsOrderedData.goodsCountTotal = 0;
-    goodsOrderedData.goodsCostTotal = 0;
-    if (!checkOrderDataIsEmpty(element)) {
-      var orderCountElements = element.querySelectorAll('.card-order__count');
-      var orderPriceElements = element.querySelectorAll('.card-order__price');
-      for (var i = 0; i < orderCountElements.length; i++) {
-        var count = parseInt(orderCountElements[i].value, 10);
-        goodsOrderedData.goodsCountTotal += count;
+  var getOrderCardsStats = function () {
+    var orderStats = {
+      countTotal: 0,
+      costTotal: 0
+    };
+    if (!checkOrderDataIsEmpty()) {
+      var orderCountElements = goodCardsElement.querySelectorAll('.card-order__count');
+      var orderPriceElements = goodCardsElement.querySelectorAll('.card-order__price');
+      orderCountElements.forEach(function (goodCount, i) {
+        var count = parseInt(goodCount.value, 10);
+        orderStats.countTotal += count;
         var price = parseInt(getRegexpValue(orderPriceElements[i].textContent, '\\d+'), 10);
-        goodsOrderedData.goodsCostTotal += count * price;
-      }
+        orderStats.costTotal += count * price;
+      });
     }
-    return goodsOrderedData;
+    return orderStats;
   };
 
-  var changeGoodCardsElement = function (element) {
-    var isGoodCardsEmpty = checkOrderDataIsEmpty(element);
-    if (isGoodCardsEmpty) {
-      element.classList.toggle('goods__cards--empty');
-      element.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
+  var changeGoodCardsElement = function (isOrderEmpty) {
+    var orderEmptyState = isOrderEmpty ? isOrderEmpty : checkOrderDataIsEmpty();
+    if (orderEmptyState) {
+      goodCardsElement.classList.toggle('goods__cards--empty');
+      goodCardsElement.querySelector('.goods__card-empty').classList.toggle('visually-hidden');
     }
-    return isGoodCardsEmpty;
   };
 
-  var changeFormElements = function (element, isOrderInitEmpty) {
-    if (checkOrderDataIsEmpty(element)) {
-      window.form.setFormToDefaultValues(true);
+  var changeFormElements = function (isOrderInitEmpty) {
+    if (checkOrderDataIsEmpty()) {
+      window.order.setFormToDefaultValues(true);
     } else if (isOrderInitEmpty) {
-      window.form.enableFormElements();
+      window.order.enableFormElements();
     }
   };
 
   var renderOrderCard = function (goodOrdered) {
     var cardOrderTemplate = document.querySelector('#card-order').content.querySelector('.goods_card');
     var cardElement = createOrderCard(cardOrderTemplate, goodOrdered);
-    var orderInitState = changeGoodCardsElement(goodCardsElement);
+    var orderInitState = checkOrderDataIsEmpty();
+    changeGoodCardsElement(orderInitState);
     goodCardsElement.appendChild(cardElement);
-    changeFormElements(goodCardsElement, orderInitState);
+    changeFormElements(orderInitState);
     return cardElement;
   };
 
   window.goods = {
-    goodsOrderedTotal: goodsOrderedTotal,
-    goodCardsElement: goodCardsElement,
+    orderedTotal: goodsOrderedTotal,
+    cardsElement: goodCardsElement,
     changeMainBasketHeader: changeMainBasketHeader,
     changeGoodCardsElement: changeGoodCardsElement,
     createAndRenderOrderCard: createAndRenderOrderCard,

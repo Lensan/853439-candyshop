@@ -21,16 +21,16 @@
     var isValid = true;
     var sum = 0;
     var cardNumbers = cardNumber.split('');
-    for (var i = 0; i < cardNumbers.length; i++) {
-      cardNumbers[i] = parseInt(cardNumbers[i], 10);
+    cardNumbers.forEach(function (digit, i) {
+      digit = parseInt(digit, 10);
       if ((i + 1) % 2 !== 0) {
-        cardNumbers[i] *= 2;
+        digit *= 2;
       }
-      if (cardNumbers[i] >= 10) {
-        cardNumbers[i] -= 9;
+      if (digit >= 10) {
+        digit -= 9;
       }
-      sum += cardNumbers[i];
-    }
+      sum += digit;
+    });
     if (sum % 10 !== 0) {
       isValid = false;
     }
@@ -63,6 +63,9 @@
     } else if (element.validity.typeMismatch) {
       element.setCustomValidity('Введите почтовый адрес в правильном формате');
       addErrorClass(element);
+    } else if (element.validity.customError) {
+      element.setCustomValidity('Невалидный номер банковской карты!');
+      addErrorClass(element);
     } else {
       element.setCustomValidity('');
       removeErrorClass(element);
@@ -70,34 +73,29 @@
     return element.validity.valid;
   };
 
-  var checkBankCardValidity = function (element) {
-    var isCardNumberValid = checkCardWithLune(element.value);
-    if (!isCardNumberValid) {
-      element.setCustomValidity('Невалидный номер банковской карты!');
-      addErrorClass(element);
-      buyElement.reportValidity();
-    }
-    return isCardNumberValid;
-  };
-
   var checkInputElementsTotal = function () {
     var inputsTotalValid = true;
-    var inputElements = formInputElements;
-    for (var i = 0; i < inputElements.length; i++) {
-      if (!inputElements[i].disabled) {
-        var isElementValid = checkElementValidity(inputElements[i]);
-        if (inputElements[i].id === 'payment__card-number' && isElementValid) {
-          isElementValid = checkBankCardValidity(inputElements[i]);
+    var isElementValid = true;
+    var isCardValid = true;
+    var inputElements = Array.from(formInputElements);
+    inputElements.forEach(function (input) {
+      if (!input.disabled) {
+        if (input.id === 'payment__card-number') {
+          isCardValid = checkCardWithLune(input.value);
+          if (!isCardValid) {
+            input.setCustomValidity('error');
+          }
         }
-        if (!isElementValid) {
+        isElementValid = checkElementValidity(input);
+        if (!isElementValid || !isCardValid) {
           inputsTotalValid = false;
         }
       }
-    }
+    });
     return inputsTotalValid;
   };
 
-  var onContactDataInputFieldsBlur = function (evt) {
+  var onContactDataInputsElementBlur = function (evt) {
     var targetElement = evt.target;
     if (!targetElement.validity.valid) {
       buyElement.reportValidity();
@@ -105,15 +103,18 @@
     checkElementValidity(targetElement);
   };
 
-  var onBankCardInputFieldsBlur = function (evt) {
+  var onPaymentInputsElementBlur = function (evt) {
     var targetElement = evt.target;
+    if (targetElement.id === 'payment__card-number') {
+      var isCardNumberValid = checkCardWithLune(targetElement.value);
+      if (!isCardNumberValid) {
+        targetElement.setCustomValidity('error');
+      }
+    }
     if (!targetElement.validity.valid) {
       buyElement.reportValidity();
     }
     var isElementValid = checkElementValidity(targetElement);
-    if (targetElement.id === 'payment__card-number' && isElementValid) {
-      isElementValid = checkBankCardValidity(targetElement);
-    }
     var arePaymentInputsSet = true;
     var paymentInputs = paymentInputsElement.querySelectorAll('input');
     for (var i = 0; i < paymentInputs.length; i++) {
@@ -124,7 +125,7 @@
     buyElement.querySelector('.payment__card-status').textContent = (isElementValid && arePaymentInputsSet) ? CARD_ACCEPTED_STATUS : CARD_DEFAULT_STATUS;
   };
 
-  var onDeliveryInputFieldsBlur = function (evt) {
+  var onDeliveryCourierElementBlur = function (evt) {
     var targetElement = evt.target;
     if (!targetElement.validity.valid) {
       buyElement.reportValidity();
@@ -132,7 +133,7 @@
     checkElementValidity(targetElement);
   };
 
-  var onUserInputFieldsInput = function (evt) {
+  var onBuyElementInput = function (evt) {
     var targetElement = evt.target;
     if (targetElement.type !== 'radio') {
       targetElement.setCustomValidity('');
@@ -140,38 +141,46 @@
     }
   };
 
-  var switchTabs = function (evt, element, class1, class2) {
+  var switchTabs = function (evt, tabElement, class1, class2) {
     var targetId = evt.target.htmlFor;
-    var inputId = buyElement.querySelector('#' + targetId);
-    if (inputId) {
-      if (!inputId.disabled) {
-        element.querySelector(class1).classList.add('visually-hidden');
-        element.querySelector(class2).classList.add('visually-hidden');
-        window.form.enableDisableFormInputs(element, 'text-input__input', true);
+    var input = buyElement.querySelector('#' + targetId);
+    if (input) {
+      if (!input.disabled) {
+        tabElement.querySelector(class1).classList.add('visually-hidden');
+        tabElement.querySelector(class2).classList.add('visually-hidden');
+        enableDisableFormInputs(tabElement, 'text-input__input', true);
+        deliveryTextAreaElement.disabled = true;
+        enableDisableFormInputs(tabElement, 'input-btn__input--radio', true);
 
-        var classToUnhide = element.querySelector('.' + targetId + '-wrap') ? '.' + targetId + '-wrap' : '.' + targetId;
-        element.querySelector(classToUnhide).classList.remove('visually-hidden');
-        var elementToEnableInputs = element.querySelector(classToUnhide);
-        window.form.enableDisableFormInputs(elementToEnableInputs, 'text-input__input', false);
+        var classToUnhide = tabElement.querySelector('.' + targetId + '-wrap') ? '.' + targetId + '-wrap' : '.' + targetId;
+        tabElement.querySelector(classToUnhide).classList.remove('visually-hidden');
+        if (input.id === 'payment__card' || input.id === 'deliver__courier') {
+          var elementToEnableInputs = tabElement.querySelector(classToUnhide);
+          enableDisableFormInputs(elementToEnableInputs, 'text-input__input', false);
+          if (input.id === 'deliver__courier') {
+            deliveryTextAreaElement.disabled = false;
+          }
+        } else if (input.id === 'deliver__store') {
+          enableDisableFormInputs(tabElement, 'input-btn__input--radio', false);
+        }
       }
     }
   };
 
-  var onPaymentTabClick = function (evt) {
+  var onPaymentMethodElementClick = function (evt) {
     switchTabs(evt, paymentElement, '.payment__card-wrap', '.payment__cash-wrap');
   };
 
-  var onDeliveryTabClick = function (evt) {
+  var onDeliveryToggleElementClick = function (evt) {
     switchTabs(evt, deliveryElement, '.deliver__store', '.deliver__courier');
   };
 
   var targetInnerHTML = '';
-  var onDeliveryStoreItemClick = function (evt) {
-    var deliveryStoreImgElement = deliveryStoreMapImgElement;
+  var onDeliveryStoreListElementClick = function (evt) {
     if (evt.target.value) {
       if (!evt.target.disabled) {
-        deliveryStoreImgElement.src = PATH_TO_MAP + evt.target.value + '.jpg';
-        deliveryStoreImgElement.alt = targetInnerHTML;
+        deliveryStoreMapImgElement.src = PATH_TO_MAP + evt.target.value + '.jpg';
+        deliveryStoreMapImgElement.alt = targetInnerHTML;
         targetInnerHTML = '';
         deliveryStoreDescribeElement.textContent = AddressMap[evt.target.value];
       }
@@ -181,53 +190,107 @@
   };
 
   var buyElement = document.querySelector('#buy-form');
-  buyElement.addEventListener('input', onUserInputFieldsInput);
+  buyElement.addEventListener('input', onBuyElementInput);
   var formInputElements = buyElement.querySelectorAll('input[class="text-input__input"]');
 
   var contactDataInputsElement = buyElement.querySelector('.contact-data__inputs');
-  contactDataInputsElement.addEventListener('blur', onContactDataInputFieldsBlur, true);
+  contactDataInputsElement.addEventListener('blur', onContactDataInputsElementBlur, true);
 
   var paymentInputsElement = buyElement.querySelector('.payment__inputs');
-  paymentInputsElement.addEventListener('blur', onBankCardInputFieldsBlur, true);
+  paymentInputsElement.addEventListener('blur', onPaymentInputsElementBlur, true);
 
   var deliveryElement = buyElement.querySelector('.deliver');
   var deliveryStoreMapImgElement = deliveryElement.querySelector('.deliver__store-map-img');
   var deliveryStoreDescribeElement = deliveryElement.querySelector('.deliver__store-describe');
   var deliveryCourierElement = deliveryElement.querySelector('.deliver__courier');
-  deliveryCourierElement.addEventListener('blur', onDeliveryInputFieldsBlur, true);
+  var deliveryTextAreaElement = deliveryCourierElement.querySelector('.deliver__textarea');
+  deliveryCourierElement.addEventListener('blur', onDeliveryCourierElementBlur, true);
 
   var paymentElement = buyElement.querySelector('.payment');
   var paymentMethodElement = paymentElement.querySelector('.payment__method');
-  paymentMethodElement.addEventListener('click', onPaymentTabClick);
+  paymentMethodElement.addEventListener('click', onPaymentMethodElementClick);
 
   var deliveryToggleElement = deliveryElement.querySelector('.deliver__toggle');
-  deliveryToggleElement.addEventListener('click', onDeliveryTabClick);
+  deliveryToggleElement.addEventListener('click', onDeliveryToggleElementClick);
 
   var deliveryStoreListElement = deliveryElement.querySelector('.deliver__store-list');
-  deliveryStoreListElement.addEventListener('click', onDeliveryStoreItemClick);
+  deliveryStoreListElement.addEventListener('click', onDeliveryStoreListElementClick);
 
-  var onSubmitButtonClick = function (evt) {
-    var isFormValid = checkInputElementsTotal(evt);
+  var onBuySubmitButtonClick = function (evt) {
+    var isFormValid = checkInputElementsTotal();
     if (isFormValid) {
       window.backend.save(new FormData(buyElement), window.modal.onSuccessLoad, window.modal.onErrorLoad);
       evt.preventDefault();
     }
   };
-  var submitButtonElement = buyElement.querySelector('.buy__submit-btn');
-  submitButtonElement.addEventListener('click', onSubmitButtonClick);
+  var buySubmitButtonElement = buyElement.querySelector('.buy__submit-btn');
+  buySubmitButtonElement.addEventListener('click', onBuySubmitButtonClick);
+
+  // clean order form after submit
+  var switchTabsToDefaultValues = function (tabElement, classToHide, classToUnhide) {
+    tabElement.querySelector(classToHide).classList.add('visually-hidden');
+    tabElement.querySelector(classToUnhide).classList.remove('visually-hidden');
+    tabElement.querySelector('.toggle-btn__input:first-of-type').checked = true;
+  };
+
+  var enableDisableFormInputs = function (inputsElement, inputClass, isDisabled) {
+    var input = (inputClass === 'none') ? 'input' : 'input[class*="' + inputClass + '"]';
+    var elementInputs = inputsElement.querySelectorAll(input);
+    elementInputs = Array.from(elementInputs);
+    elementInputs.forEach(function (input1) {
+      input1.disabled = isDisabled;
+    });
+  };
+
+  var removeAllGoodsCards = function (cardsElement, cardClass) {
+    var goodsCardsTotal = cardsElement.querySelectorAll(cardClass);
+    goodsCardsTotal = Array.from(goodsCardsTotal);
+    goodsCardsTotal.forEach(function (card) {
+      card.parentNode.removeChild(card);
+    });
+  };
+
+  var deliverStoreElement = buyElement.querySelector('.deliver__store');
+
+  var revertDeliveryStoreElement = function () {
+    var deliverStoreFirstInput = deliverStoreElement.querySelector('.input-btn__input--radio:first-of-type');
+    var deliverStoreFirstLabel = deliverStoreElement.querySelector('.input-btn__label:first-of-type');
+    deliverStoreFirstInput.checked = true;
+    deliveryStoreMapImgElement.src = PATH_TO_MAP + deliverStoreFirstInput.value + '.jpg';
+    deliveryStoreMapImgElement.alt = deliverStoreFirstLabel.textContent;
+    deliveryStoreDescribeElement.textContent = AddressMap[deliverStoreFirstInput.value];
+  };
 
   window.order = {
-    PATH_TO_MAP: PATH_TO_MAP,
-    AddressMap: AddressMap,
-    submitButtonElement: submitButtonElement,
-    buyElement: buyElement,
-    paymentElement: paymentElement,
-    deliveryElement: deliveryElement,
-    contactDataInputsElement: contactDataInputsElement,
-    paymentInputsElement: paymentInputsElement,
-    formInputElements: formInputElements,
-    deliveryStoreMapImgElement: deliveryStoreMapImgElement,
-    deliveryStoreDescribeElement: deliveryStoreDescribeElement,
-    removeErrorClass: removeErrorClass
+    enableDisableFormInputs: enableDisableFormInputs,
+    removeAllGoodsCards: removeAllGoodsCards,
+    enableFormElements: function () {
+      enableDisableFormInputs(contactDataInputsElement, 'text-input__input', false);
+      enableDisableFormInputs(paymentInputsElement, 'text-input__input', false);
+      enableDisableFormInputs(buyElement, 'toggle-btn__input', false);
+      enableDisableFormInputs(deliverStoreElement, 'input-btn__input', false);
+      buySubmitButtonElement.disabled = false;
+    },
+    setFormToDefaultValues: function (isInitial) {
+      if (!isInitial) {
+        // clean the basket
+        removeAllGoodsCards(window.goods.cardsElement, '.card-order');
+        window.goods.changeGoodCardsElement();
+        window.goods.orderedTotal = [];
+        var inputElements = Array.from(formInputElements);
+        inputElements.forEach(function (input) {
+          input.value = '';
+          removeErrorClass(input);
+        });
+        deliveryTextAreaElement.value = '';
+      }
+      switchTabsToDefaultValues(paymentElement, '.payment__cash-wrap', '.payment__card-wrap');
+      switchTabsToDefaultValues(deliveryElement, '.deliver__courier', '.deliver__store');
+      revertDeliveryStoreElement(deliverStoreElement);
+      enableDisableFormInputs(buyElement, 'none', true);
+      buyElement.querySelector('.payment__card-status').textContent = '';
+      deliveryTextAreaElement.disabled = true;
+      buySubmitButtonElement.disabled = true;
+    }
   };
 })();

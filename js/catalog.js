@@ -30,8 +30,7 @@
   var addRemoveClass = function (classList, className, oldClass, newClass) {
     var classListInitial = className.split(' ');
     var isClassFound = false;
-    for (var i = 0; i < classListInitial.length; i++) {
-      var item = classListInitial[i];
+    classListInitial.forEach(function (item) {
       if (item.includes(oldClass)) {
         if (!isClassFound && item === newClass) {
           isClassFound = true;
@@ -39,26 +38,26 @@
           classList.remove(item);
         }
       }
-    }
+    });
     if (!isClassFound) {
       classList.add(newClass);
     }
   };
 
-  var createCatalogCard = function (template, good) {
+  var createCatalogCard = function (template, goodData) {
     var card = template.cloneNode(true);
-    addRemoveClass(card.classList, card.className, 'card--', getCardClass(good.amount));
-    card.querySelector('.card__title').textContent = good.name;
+    addRemoveClass(card.classList, card.className, 'card--', getCardClass(goodData.amount));
+    card.querySelector('.card__title').textContent = goodData.name;
     var cardImageElement = card.querySelector('.card__img');
-    cardImageElement.src = good.picture;
-    cardImageElement.alt = good.name;
-    card.querySelector('.card__price').innerHTML = good.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + good.weight + ' Г</span>';
+    cardImageElement.src = goodData.picture;
+    cardImageElement.alt = goodData.name;
+    card.querySelector('.card__price').innerHTML = goodData.price + ' <span class="card__currency">₽</span><span class="card__weight">/ ' + goodData.weight + ' Г</span>';
     var starsRatingElement = card.querySelector('.stars__rating');
-    addRemoveClass(starsRatingElement.classList, starsRatingElement.className, 'stars__rating--', getStarsRating(good.rating.value));
-    card.querySelector('.star__count').textContent = '(' + good.rating.number + ')';
-    card.querySelector('.card__characteristic').textContent = (good.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + good.nutritionFacts.energy + ' ккал';
-    card.querySelector('.card__composition-list').textContent = good.nutritionFacts.contents + '.';
-    if (good.favorite) {
+    addRemoveClass(starsRatingElement.classList, starsRatingElement.className, 'stars__rating--', getStarsRating(goodData.rating.value));
+    card.querySelector('.star__count').textContent = '(' + goodData.rating.number + ')';
+    card.querySelector('.card__characteristic').textContent = (goodData.nutritionFacts.sugar ? 'Содержит сахар' : 'Без сахара') + '. ' + goodData.nutritionFacts.energy + ' ккал';
+    card.querySelector('.card__composition-list').textContent = goodData.nutritionFacts.contents + '.';
+    if (goodData.favorite) {
       card.querySelector('.card__btn-favorite').classList.add('card__btn-favorite--selected');
     }
     return card;
@@ -67,82 +66,85 @@
   var renderCatalogCardsTotal = function (goodData, cardsElement) {
     var catalogCardTemplate = document.querySelector('#card').content.querySelector('.catalog__card');
     var fragment = document.createDocumentFragment();
-    for (var i = 0; i < goodData.length; i++) {
-      var cardElement = createCatalogCard(catalogCardTemplate, goodData[i]);
+    goodData.forEach(function (good) {
+      var cardElement = createCatalogCard(catalogCardTemplate, good);
       fragment.appendChild(cardElement);
-    }
+    });
     cardsElement.appendChild(fragment);
   };
 
   var catalogCardsWrapElement = document.querySelector('.catalog__cards-wrap');
   var catalogCardsElement = catalogCardsWrapElement.querySelector('.catalog__cards');
 
-  var getParentElement = function (evt, className) {
-    var element = evt.target;
+  var getParentElement = function (element, className) {
     var isElementFound = false;
+    var parentElement = '';
     while (!isElementFound && element.parentNode.nodeName !== '#document') {
       element = element.parentNode;
       if (element.classList.contains(className)) {
         isElementFound = true;
+        parentElement = element;
       }
     }
-    return element;
+    return parentElement;
   };
 
-  var addRemoveCardComposition = function (element) {
-    element.querySelector('.card__composition').classList.toggle('card__composition--hidden');
+  var addRemoveCardComposition = function (cardElement) {
+    cardElement.querySelector('.card__composition').classList.toggle('card__composition--hidden');
   };
 
-  var addRemoveCardFavorite = function (evt, element) {
-    evt.target.classList.toggle('card__btn-favorite--selected');
-    evt.target.blur();
-    var goodsFavorite = window.catalog.goodsFavoriteData;
-    var cardData = window.goods.getGoodFromInitialData(element.querySelector('.card__title').textContent, false);
-    var cardIndex = goodsFavorite.indexOf(cardData);
+  var addRemoveCardFavorite = function (favoriteButton, cardElement) {
+    favoriteButton.classList.toggle('card__btn-favorite--selected');
+    favoriteButton.blur();
+    var goodsFavoriteData = window.catalog.goodsFavoriteData;
+    var cardData = window.goods.getGoodFromInitialData(cardElement.querySelector('.card__title').textContent, false);
+    var cardIndex = goodsFavoriteData.indexOf(cardData);
     if (cardIndex === -1) {
       cardData.favorite = true;
-      goodsFavorite.push(cardData);
+      goodsFavoriteData.push(cardData);
     } else {
       cardData.favorite = false;
-      goodsFavorite.splice(cardIndex, 1);
+      goodsFavoriteData.splice(cardIndex, 1);
       if (window.filter.catalogFilterFavoriteElement.checked) {
-        window.filter.renderNewCatalogCards(goodsFavorite);
+        window.filter.renderNewCatalogCards(goodsFavoriteData);
       }
     }
-    window.filter.getInputButtonItemCountElement(window.filter.catalogFilterFavoriteElement).textContent = '(' + goodsFavorite.length + ')';
-    window.catalog.goodsFavoriteData = goodsFavorite;
+    window.filter.getFavoriteButtonCountElement().textContent = '(' + goodsFavoriteData.length + ')';
+    window.catalog.goodsFavoriteData = goodsFavoriteData;
   };
 
   var onCatalogCardElementClick = function (evt) {
     var targetElement = evt.target;
-    var cardElement = getParentElement(evt, 'catalog__card');
-    if (targetElement.classList.contains('card__btn-composition')) {
-      addRemoveCardComposition(cardElement);
-    } else if (targetElement.classList.contains('card__btn-favorite')) {
-      evt.preventDefault();
-      addRemoveCardFavorite(evt, cardElement);
-    } else if (targetElement.classList.contains('card__btn')) {
-      evt.preventDefault();
-      window.goods.createAndRenderOrderCard(evt);
+    var cardElement = getParentElement(targetElement, 'catalog__card');
+    if (cardElement) {
+      if (targetElement.classList.contains('card__btn-composition')) {
+        addRemoveCardComposition(cardElement);
+      } else if (targetElement.classList.contains('card__btn-favorite')) {
+        evt.preventDefault();
+        addRemoveCardFavorite(targetElement, cardElement);
+      } else if (targetElement.classList.contains('card__btn')) {
+        evt.preventDefault();
+        window.goods.createAndRenderOrderCard(cardElement);
+      }
     }
   };
 
-  var updateGoodData = function (data) {
-    data.forEach(function (good) {
+  var updateGoodsData = function (goodsData) {
+    goodsData.forEach(function (good) {
       good.id = window.goods.getRegexpValue(good.picture, '.+(?=\\.)');
       good.picture = PATH_TO_PIC + good.picture;
       good.favorite = false;
     });
-    return data;
+    return goodsData;
   };
 
-  var onSuccessLoad = function (goodDataLoaded) {
-    var goodsData = updateGoodData(goodDataLoaded);
+  var onSuccessLoad = function (goodsDataLoaded) {
+    var goodsData = updateGoodsData(goodsDataLoaded);
     catalogCardsElement.classList.remove('catalog__cards--load');
     catalogCardsWrapElement.querySelector('.catalog__load').classList.add('visually-hidden');
     renderCatalogCardsTotal(goodsData, catalogCardsElement);
     catalogCardsElement.addEventListener('click', onCatalogCardElementClick);
-    window.form.setFormToDefaultValues(true);
+    window.order.setFormToDefaultValues(true);
     window.filter.setFiltersInitialData(goodsData);
     window.catalog.goodsDataTotal = goodsData;
     window.catalog.goodsDataToSort = goodsData;
@@ -155,7 +157,7 @@
     goodsDataTotal: [],
     goodsDataToSort: [],
     CARD_SOON_CLASS: CARD_SOON_CLASS,
-    catalogCardsElement: catalogCardsElement,
+    cardsElement: catalogCardsElement,
     getParentElement: getParentElement,
     renderCatalogCardsTotal: renderCatalogCardsTotal
   };

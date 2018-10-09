@@ -7,7 +7,7 @@
   var getFilteredData = function (data, param, value, type, name) {
     var dataFiltered = {};
     dataFiltered.name = name;
-    dataFiltered.check = false;
+    dataFiltered.checked = false;
     dataFiltered.type = type;
     dataFiltered.data = data.filter(function (it) {
       var result;
@@ -35,7 +35,7 @@
     });
   };
 
-  var setGoodPriceRangeData = function (data) {
+  var setGoodsPriceRangeData = function (data) {
     var prices = data.map(function (good) {
       return good.price;
     });
@@ -72,7 +72,7 @@
         getInputButtonItemCountElement(catalogFilterInputElements[i]).textContent = '(' + ((filterItemValue === 'favorite') ? '0' : getGoodsAvailableData(goodsData).length) + ')';
       }
     }
-    setGoodPriceRangeData(goodsData);
+    setGoodsPriceRangeData(goodsData);
     window.filter.goodsFilteredDataTotal = goodsFilteredDataTotal;
   };
 
@@ -89,7 +89,7 @@
     return dataFiltered;
   };
 
-  var onLeftRangeButtonDown = function (evt) {
+  var onLeftRangeButtonMouseDown = function (evt) {
     var priceRange = window.filter.priceRange;
     var goodMinPrice = window.filter.goodMinPrice;
     var startCoordsX = evt.clientX;
@@ -118,7 +118,7 @@
       document.removeEventListener('mousemove', onRangeMouseMove);
       document.removeEventListener('mouseup', onRangeMouseUp);
       var currentlyFilteredData = changeFilteredDataWithNewPrice(window.filter.dataFilteredArray, true);
-      uncheckFilterInputs(catalogFilterMarkInputs);
+      uncheckFilterMarkInputs();
       var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
       var dataSorted = window.sort.sortCatalogData(currentlyFilteredData, sortItemChecked);
       renderNewCatalogCards(dataSorted);
@@ -128,7 +128,7 @@
     document.addEventListener('mouseup', onRangeMouseUp);
   };
 
-  var onRightRangeButtonDown = function (evt) {
+  var onRightRangeButtonMouseDown = function (evt) {
     var priceRange = window.filter.priceRange;
     var goodMinPrice = window.filter.goodMinPrice;
     var startCoordsX = evt.clientX;
@@ -157,7 +157,7 @@
       document.removeEventListener('mousemove', onRangeMouseMove);
       document.removeEventListener('mouseup', onRangeMouseUp);
       var currentlyFilteredData = changeFilteredDataWithNewPrice(window.filter.dataFilteredArray, true);
-      uncheckFilterInputs(catalogFilterMarkInputs);
+      uncheckFilterMarkInputs();
       var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
       var dataSorted = window.sort.sortCatalogData(currentlyFilteredData, sortItemChecked);
       renderNewCatalogCards(dataSorted);
@@ -177,71 +177,69 @@
   var rangeButtonRightElement = rangeFilterElement.querySelector('.range__btn--right');
   var rangeFillLineElement = rangeFilterElement.querySelector('.range__fill-line');
 
-  rangeButtonLeftElement.addEventListener('mousedown', onLeftRangeButtonDown);
-  rangeButtonRightElement.addEventListener('mousedown', onRightRangeButtonDown);
+  rangeButtonLeftElement.addEventListener('mousedown', onLeftRangeButtonMouseDown);
+  rangeButtonRightElement.addEventListener('mousedown', onRightRangeButtonMouseDown);
 
-  var getFiltersCheckedItems = function (data) {
-    return data.filter(function (it) {
-      return it.check === true;
+  var getFiltersCheckedItems = function (goodsFilteredData) {
+    return goodsFilteredData.filter(function (item) {
+      return item.checked === true;
     });
   };
 
-  var checkUncheckGoodInFilterArray = function (data, name, flag) {
-    data.forEach(function (good) {
-      if (good.name === name) {
-        good.check = flag;
+  var checkUncheckGoodInFilterArray = function (goodsFilteredData, goodName, flag) {
+    goodsFilteredData.forEach(function (good) {
+      if (good.name === goodName) {
+        good.checked = flag;
       }
     });
-    return data;
+    return goodsFilteredData;
   };
 
-  var filterSingleItem = function (data, name) {
-    var dataFiltered = data.filter(function (goodData) {
-      return goodData.name === name;
+  var filterSingleItem = function (goodsFilteredData, goodName) {
+    var dataFiltered = goodsFilteredData.filter(function (goodData) {
+      return goodData.name === goodName;
     });
     return dataFiltered[0];
   };
 
-  var filterMultipleItems = function (data) {
+  var filterMultipleItems = function (itemsFilterChecked) {
     var dataTypeFiltered = [];
-    data.filter(function (it) {
-      return it.type === 'food-type';
-    }).forEach(function (it) {
-      dataTypeFiltered = dataTypeFiltered.concat(it.data);
+    itemsFilterChecked.filter(function (item) {
+      return item.type === 'food-type';
+    }).forEach(function (item) {
+      dataTypeFiltered = dataTypeFiltered.concat(item.data);
     });
 
     var dataFiltered = [];
-    for (var i = 0; i < data.length; i++) {
+    for (var i = 0; i < itemsFilterChecked.length; i++) {
       if (!i) {
-        dataFiltered = data[i].type === 'food-type' ? dataTypeFiltered : data[i].data;
-      } else if (data[i].type !== 'food-type') {
-        dataFiltered = dataFiltered.filter(function (data1) {
-          return data[i].data.includes(data1);
+        dataFiltered = itemsFilterChecked[i].type === 'food-type' ? dataTypeFiltered : itemsFilterChecked[i].data;
+      } else if (itemsFilterChecked[i].type !== 'food-type') {
+        dataFiltered = dataFiltered.filter(function (data) {
+          return itemsFilterChecked[i].data.includes(data);
         });
       }
     }
     return dataFiltered;
   };
 
-  var filterParticularData = function (filterItemsChecked, goodsFilteredData) {
-    var goodsFiltered = [];
-    if (filterItemsChecked.length === 1) {
-      var dataFiltered = filterSingleItem(goodsFilteredData, filterItemsChecked[0].name);
-      goodsFiltered = dataFiltered.data;
-    } else if (filterItemsChecked.length) {
-      dataFiltered = filterMultipleItems(filterItemsChecked);
-      if (dataFiltered.length) {
-        goodsFiltered = dataFiltered;
-      } else {
-        goodsFiltered = [];
+  var filterParticularData = function (itemsFilterChecked, goodsFilteredData) {
+    var dataFiltered = [];
+    if (itemsFilterChecked.length === 1) {
+      dataFiltered = filterSingleItem(goodsFilteredData, itemsFilterChecked[0].name);
+      dataFiltered = dataFiltered.data;
+    } else if (itemsFilterChecked.length) {
+      dataFiltered = filterMultipleItems(itemsFilterChecked);
+      if (!dataFiltered.length) {
+        dataFiltered = [];
       }
     }
-    return goodsFiltered;
+    return dataFiltered;
   };
 
   var renderNewCatalogCards = window.debounce(function (cardsData) {
-    var catalogCardsElement = window.catalog.catalogCardsElement;
-    window.form.removeAllGoodsCards(catalogCardsElement, '.catalog__card');
+    var catalogCardsElement = window.catalog.cardsElement;
+    window.order.removeAllGoodsCards(catalogCardsElement, '.catalog__card');
     var catalogEmptyFilterElement = catalogCardsElement.querySelector('.catalog__empty-filter');
     if (cardsData.length) {
       if (catalogEmptyFilterElement) {
@@ -262,18 +260,18 @@
   var filterGoodsData = function (filterName, filterChecked) {
     var goodsCurrentlyFiltered = [];
     var goodsFilteredData = window.filter.goodsFilteredDataTotal;
-    var filtersCheckedItems = [];
+    var itemsFilterChecked = [];
     if (filterChecked) {
       goodsFilteredData = checkUncheckGoodInFilterArray(goodsFilteredData, filterName, true);
-      filtersCheckedItems = getFiltersCheckedItems(goodsFilteredData);
-      goodsCurrentlyFiltered = filterParticularData(filtersCheckedItems, goodsFilteredData);
+      itemsFilterChecked = getFiltersCheckedItems(goodsFilteredData);
+      goodsCurrentlyFiltered = filterParticularData(itemsFilterChecked, goodsFilteredData);
     } else {
       goodsFilteredData = checkUncheckGoodInFilterArray(goodsFilteredData, filterName, false);
-      filtersCheckedItems = getFiltersCheckedItems(goodsFilteredData);
-      if (!filtersCheckedItems.length) {
+      itemsFilterChecked = getFiltersCheckedItems(goodsFilteredData);
+      if (!itemsFilterChecked.length) {
         goodsCurrentlyFiltered = window.catalog.goodsDataTotal;
       } else {
-        goodsCurrentlyFiltered = filterParticularData(filtersCheckedItems, goodsFilteredData);
+        goodsCurrentlyFiltered = filterParticularData(itemsFilterChecked, goodsFilteredData);
       }
     }
     window.filter.dataFilteredArray = goodsCurrentlyFiltered;
@@ -283,28 +281,6 @@
 
   var catalogFilterMarkElements = catalogSideBarElement.querySelector('.catalog__filter:nth-of-type(3)');
   var catalogFilterMarkInputs = catalogFilterMarkElements.querySelectorAll('input');
-
-  var filterGoodsCommon = function (evt) {
-    var goodsFiltered = filterGoodsData(evt.target.value, evt.target.checked);
-    goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
-    uncheckFilterInputs(catalogFilterMarkInputs);
-    var sortItemChecked = window.sort.getSortItemCurrentlyChecked();
-    var dataSorted = window.sort.sortCatalogData(goodsFiltered, sortItemChecked);
-    renderNewCatalogCards(dataSorted);
-    window.catalog.goodsDataToSort = goodsFiltered;
-  };
-
-  var onFoodTypeElementClick = function (evt) {
-    if (evt.target.value) {
-      filterGoodsCommon(evt);
-    }
-  };
-
-  var onFoodPropertyElementClick = function (evt) {
-    if (evt.target.value) {
-      filterGoodsCommon(evt);
-    }
-  };
 
   var uncheckFilterInputs = function (inputs) {
     if (inputs.length) {
@@ -320,6 +296,32 @@
     }
   };
 
+  var uncheckFilterMarkInputs = function () {
+    uncheckFilterInputs(catalogFilterMarkInputs);
+  };
+
+  var filterGoodsCommon = function (inputElement) {
+    var goodsFiltered = filterGoodsData(inputElement.value, inputElement.checked);
+    goodsFiltered = changeFilteredDataWithNewPrice(goodsFiltered, false);
+    uncheckFilterMarkInputs();
+    var itemSortChecked = window.sort.getSortItemCurrentlyChecked();
+    var dataSorted = window.sort.sortCatalogData(goodsFiltered, itemSortChecked);
+    renderNewCatalogCards(dataSorted);
+    window.catalog.goodsDataToSort = goodsFiltered;
+  };
+
+  var onFilterFoodTypeElementClick = function (evt) {
+    if (evt.target.value) {
+      filterGoodsCommon(evt.target);
+    }
+  };
+
+  var onFilterFoodPropertyElementClick = function (evt) {
+    if (evt.target.value) {
+      filterGoodsCommon(evt.target);
+    }
+  };
+
   var revertPriceFilters = function () {
     rangePriceMinElement.textContent = window.filter.goodMinPrice;
     rangePriceMaxElement.textContent = window.filter.goodMaxPrice;
@@ -329,21 +331,19 @@
     rangeFillLineElement.style.right = '0px';
   };
 
-  var revertFiltersToDefaultValues = function (evt) {
+  var revertFiltersToDefaultValues = function (inputElement) {
     var goodsFilteredData = window.filter.goodsFilteredDataTotal;
     goodsFilteredData.forEach(function (good) {
-      good.check = false;
+      good.checked = false;
     });
-    var foodTypeInputs = catalogFilterFoodTypeElement.querySelectorAll('input');
     uncheckFilterInputs(foodTypeInputs);
-    var foodPropertyInputs = catalogFilterFoodPropertyElement.querySelectorAll('input');
     uncheckFilterInputs(foodPropertyInputs);
-    if (!evt) {
-      uncheckFilterInputs(catalogFilterMarkInputs);
+    if (!inputElement) {
+      uncheckFilterMarkInputs();
     } else {
-      if (evt.target.id === 'filter-favorite') {
+      if (inputElement.id === 'filter-favorite') {
         uncheckFilterInputs(catalogFilterAvailableElement);
-      } else if (evt.target.id === 'filter-availability') {
+      } else if (inputElement.id === 'filter-availability') {
         uncheckFilterInputs(catalogFilterFavoriteElement);
       }
     }
@@ -353,17 +353,17 @@
     window.filter.goodsFilteredDataTotal = goodsFilteredData;
   };
 
-  var onCatalogFilterShowAllElementClick = function (evt) {
+  var onFilterSubmitButtonClick = function (evt) {
     evt.preventDefault();
-    revertFiltersToDefaultValues();
+    revertFiltersToDefaultValues(evt.target);
     renderNewCatalogCards(window.catalog.goodsDataTotal);
     window.catalog.goodsDataToSort = window.catalog.goodsDataTotal;
   };
 
-  var onCatalogFilterFavoriteElementClick = function (evt) {
+  var onFilterFavoriteElementClick = function (evt) {
     if (evt.target.value) {
       if (evt.target.checked) {
-        revertFiltersToDefaultValues(evt);
+        revertFiltersToDefaultValues(evt.target);
         renderNewCatalogCards(window.catalog.goodsFavoriteData);
       } else {
         renderNewCatalogCards(window.catalog.goodsDataTotal);
@@ -372,10 +372,10 @@
     }
   };
 
-  var onCatalogFilterAvailableElementClick = function (evt) {
+  var onFilterAvailableElementClick = function (evt) {
     if (evt.target.value) {
       if (evt.target.checked) {
-        revertFiltersToDefaultValues(evt);
+        revertFiltersToDefaultValues(evt.target);
         var goodsAvailableData = getGoodsAvailableData(window.catalog.goodsDataTotal);
         renderNewCatalogCards(goodsAvailableData);
       } else {
@@ -386,19 +386,21 @@
   };
 
   var catalogFilterFoodTypeElement = catalogSideBarElement.querySelector('.catalog__filter:first-of-type');
-  catalogFilterFoodTypeElement.addEventListener('click', onFoodTypeElementClick);
+  var foodTypeInputs = catalogFilterFoodTypeElement.querySelectorAll('input');
+  catalogFilterFoodTypeElement.addEventListener('click', onFilterFoodTypeElementClick);
 
   var catalogFilterFoodPropertyElement = catalogSideBarElement.querySelector('.catalog__filter:nth-of-type(2)');
-  catalogFilterFoodPropertyElement.addEventListener('click', onFoodPropertyElementClick);
+  var foodPropertyInputs = catalogFilterFoodPropertyElement.querySelectorAll('input');
+  catalogFilterFoodPropertyElement.addEventListener('click', onFilterFoodPropertyElementClick);
 
   var catalogFilterSubmitElement = catalogSideBarElement.querySelector('.catalog__submit');
-  catalogFilterSubmitElement.addEventListener('click', onCatalogFilterShowAllElementClick);
+  catalogFilterSubmitElement.addEventListener('click', onFilterSubmitButtonClick);
 
   var catalogFilterFavoriteElement = catalogSideBarElement.querySelector('#filter-favorite');
-  catalogFilterFavoriteElement.addEventListener('click', onCatalogFilterFavoriteElementClick);
+  catalogFilterFavoriteElement.addEventListener('click', onFilterFavoriteElementClick);
 
   var catalogFilterAvailableElement = catalogSideBarElement.querySelector('#filter-availability');
-  catalogFilterAvailableElement.addEventListener('click', onCatalogFilterAvailableElementClick);
+  catalogFilterAvailableElement.addEventListener('click', onFilterAvailableElementClick);
 
   window.filter = {
     priceRange: 0,
@@ -407,11 +409,17 @@
     goodsFilteredDataTotal: [],
     dataFilteredArray: [],
     catalogFilterFavoriteElement: catalogFilterFavoriteElement,
-    catalogFilterMarkInputs: catalogFilterMarkInputs,
-    catalogSideBarElement: catalogSideBarElement,
     renderNewCatalogCards: renderNewCatalogCards,
     setFiltersInitialData: setFiltersInitialData,
-    getInputButtonItemCountElement: getInputButtonItemCountElement,
-    uncheckFilterInputs: uncheckFilterInputs,
+    uncheckFilterMarkInputs: uncheckFilterMarkInputs,
+    disableAllFilterElements: function () {
+      window.order.enableDisableFormInputs(catalogSideBarElement, 'none', true);
+      catalogSideBarElement.querySelectorAll('button').forEach(function (button) {
+        button.disabled = true;
+      });
+    },
+    getFavoriteButtonCountElement: function () {
+      return getInputButtonItemCountElement(catalogFilterFavoriteElement);
+    }
   };
 })();
