@@ -187,11 +187,10 @@
   };
 
   var checkUncheckGoodInFilterArray = function (goodsFilteredData, goodName, flag) {
-    goodsFilteredData.forEach(function (good) {
-      if (good.name === goodName) {
-        good.checked = flag;
-      }
+    var goodInFilter = goodsFilteredData.find(function (good) {
+      return good.name === goodName;
     });
+    goodInFilter.checked = flag;
     return goodsFilteredData;
   };
 
@@ -284,15 +283,12 @@
 
   var uncheckFilterInputs = function (inputs) {
     if (inputs.length) {
-      for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i].checked) {
-          inputs[i].checked = false;
-        }
-      }
+      var inputsArray = Array.from(inputs);
+      inputsArray.forEach(function (input) {
+        input.checked = input.checked ? false : input.checked;
+      });
     } else {
-      if (inputs.checked) {
-        inputs.checked = false;
-      }
+      inputs.checked = false;
     }
   };
 

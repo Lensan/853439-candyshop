@@ -43,13 +43,9 @@
     sortCatalogData: sortCatalogData,
     getSortItemCurrentlyChecked: function () {
       var catalogFilterSortInputs = catalogFilterSortElement.querySelectorAll('input');
-      var checkedItem = '';
-      for (var i = 0; i < catalogFilterSortInputs.length; i++) {
-        if (catalogFilterSortInputs[i].checked) {
-          checkedItem = catalogFilterSortInputs[i].value;
-        }
-      }
-      return checkedItem;
+      return Array.from(catalogFilterSortInputs).find(function (input) {
+        return input.checked;
+      }).value;
     }
   };
 })();
