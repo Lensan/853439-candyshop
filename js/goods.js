@@ -196,6 +196,7 @@
     if (!checkOrderDataIsEmpty()) {
       var orderCountElements = goodCardsElement.querySelectorAll('.card-order__count');
       var orderPriceElements = goodCardsElement.querySelectorAll('.card-order__price');
+      orderCountElements = Array.from(orderCountElements);
       orderCountElements.forEach(function (goodCount, i) {
         var count = parseInt(goodCount.value, 10);
         orderStats.countTotal += count;

@@ -97,9 +97,6 @@
 
   var onContactDataInputsElementBlur = function (evt) {
     var targetElement = evt.target;
-    if (!targetElement.validity.valid) {
-      buyElement.reportValidity();
-    }
     checkElementValidity(targetElement);
   };
 
@@ -111,25 +108,16 @@
         targetElement.setCustomValidity('error');
       }
     }
-    if (!targetElement.validity.valid) {
-      buyElement.reportValidity();
-    }
-    var isElementValid = checkElementValidity(targetElement);
-    var arePaymentInputsSet = true;
-    var paymentInputs = paymentInputsElement.querySelectorAll('input');
-    for (var i = 0; i < paymentInputs.length; i++) {
-      if (!paymentInputs[i].value) {
-        arePaymentInputsSet = false;
-      }
-    }
-    buyElement.querySelector('.payment__card-status').textContent = (isElementValid && arePaymentInputsSet) ? CARD_ACCEPTED_STATUS : CARD_DEFAULT_STATUS;
+    checkElementValidity(targetElement);
+    paymentInputsElementInputs = Array.from(paymentInputsElementInputs);
+    var arePaymentInputsValid = paymentInputsElementInputs.every(function (input) {
+      return input.validity.valid;
+    });
+    buyElement.querySelector('.payment__card-status').textContent = (arePaymentInputsValid) ? CARD_ACCEPTED_STATUS : CARD_DEFAULT_STATUS;
   };
 
   var onDeliveryCourierElementBlur = function (evt) {
     var targetElement = evt.target;
-    if (!targetElement.validity.valid) {
-      buyElement.reportValidity();
-    }
     checkElementValidity(targetElement);
   };
 
@@ -197,6 +185,7 @@
   contactDataInputsElement.addEventListener('blur', onContactDataInputsElementBlur, true);
 
   var paymentInputsElement = buyElement.querySelector('.payment__inputs');
+  var paymentInputsElementInputs = paymentInputsElement.querySelectorAll('input');
   paymentInputsElement.addEventListener('blur', onPaymentInputsElementBlur, true);
 
   var deliveryElement = buyElement.querySelector('.deliver');
@@ -251,10 +240,10 @@
   };
 
   var deliverStoreElement = buyElement.querySelector('.deliver__store');
+  var deliverStoreFirstInput = deliverStoreElement.querySelector('.input-btn__input--radio:first-of-type');
+  var deliverStoreFirstLabel = deliverStoreElement.querySelector('.input-btn__label:first-of-type');
 
   var revertDeliveryStoreElement = function () {
-    var deliverStoreFirstInput = deliverStoreElement.querySelector('.input-btn__input--radio:first-of-type');
-    var deliverStoreFirstLabel = deliverStoreElement.querySelector('.input-btn__label:first-of-type');
     deliverStoreFirstInput.checked = true;
     deliveryStoreMapImgElement.src = PATH_TO_MAP + deliverStoreFirstInput.value + '.jpg';
     deliveryStoreMapImgElement.alt = deliverStoreFirstLabel.textContent;
